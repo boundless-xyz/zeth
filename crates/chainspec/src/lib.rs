@@ -17,10 +17,13 @@ use alloy_eips::{
     BlobScheduleBlobParams,
     eip1559::BaseFeeParams,
     eip2124::{ForkFilter, ForkId, Head},
+    eip7840::BlobParams,
 };
 use alloy_evm::eth::spec::EthExecutorSpec;
 use alloy_genesis::Genesis;
-use alloy_hardforks::{EthereumHardfork, EthereumHardforks, ForkCondition, Hardfork};
+use alloy_hardforks::{
+    EthereumHardfork, EthereumHardforks, ForkCondition, Hardfork, holesky, mainnet, sepolia,
+};
 use alloy_primitives::{Address, B256, U256, address};
 use reth_chainspec::{Chain, DepositContract, EthChainSpec, Hardforks, NamedChain};
 use std::{
@@ -43,7 +46,10 @@ pub static MAINNET: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
         forks: EthereumHardfork::mainnet().into(),
         deposit_contract_address: Some(MAINNET_DEPOSIT_CONTRACT_ADDRESS),
         base_fee_params: BaseFeeParams::ethereum(),
-        blob_params: BlobScheduleBlobParams::mainnet(),
+        blob_params: BlobScheduleBlobParams::default().with_scheduled([
+            (mainnet::MAINNET_BPO1_TIMESTAMP, BlobParams::bpo1()),
+            (mainnet::MAINNET_BPO2_TIMESTAMP, BlobParams::bpo2()),
+        ]),
     };
     spec.into()
 });
@@ -54,7 +60,10 @@ pub static SEPOLIA: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
         forks: EthereumHardfork::sepolia().into(),
         deposit_contract_address: Some(SEPOLIA_DEPOSIT_CONTRACT_ADDRESS),
         base_fee_params: BaseFeeParams::ethereum(),
-        blob_params: BlobScheduleBlobParams::mainnet(),
+        blob_params: BlobScheduleBlobParams::default().with_scheduled([
+            (sepolia::SEPOLIA_BPO1_TIMESTAMP, BlobParams::bpo1()),
+            (sepolia::SEPOLIA_BPO2_TIMESTAMP, BlobParams::bpo2()),
+        ]),
     };
     spec.into()
 });
@@ -65,7 +74,10 @@ pub static HOLESKY: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
         forks: EthereumHardfork::holesky().into(),
         deposit_contract_address: Some(HOLESKY_DEPOSIT_CONTRACT_ADDRESS),
         base_fee_params: BaseFeeParams::ethereum(),
-        blob_params: BlobScheduleBlobParams::mainnet(),
+        blob_params: BlobScheduleBlobParams::default().with_scheduled([
+            (holesky::HOLESKY_BPO1_TIMESTAMP, BlobParams::bpo1()),
+            (holesky::HOLESKY_BPO2_TIMESTAMP, BlobParams::bpo2()),
+        ]),
     };
     spec.into()
 });
