@@ -146,7 +146,7 @@ impl EthChainSpec for ChainSpec {
         self.base_fee_params
     }
 
-    fn blob_params_at_timestamp(&self, timestamp: u64) -> Option<alloy_eips::eip7840::BlobParams> {
+    fn blob_params_at_timestamp(&self, timestamp: u64) -> Option<BlobParams> {
         if let Some(blob_param) = self.blob_params.active_scheduled_params_at_timestamp(timestamp) {
             Some(*blob_param)
         } else if self.is_osaka_active_at_timestamp(timestamp) {
