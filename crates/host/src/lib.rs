@@ -25,7 +25,9 @@ use guests::{HOLESKY_ELF, MAINNET_ELF, SEPOLIA_ELF};
 use k256::ecdsa::VerifyingKey;
 use reth_chainspec::{ChainSpec, EthChainSpec};
 use reth_ethereum_primitives::TransactionSigned;
-use risc0_zkvm::{Digest, ExecutorEnvBuilder, Receipt, compute_image_id, default_prover};
+use risc0_zkvm::{
+    Digest, ExecutorEnvBuilder, ProverOpts, Receipt, compute_image_id, default_prover,
+};
 use std::sync::Arc;
 use zeth_core::Input;
 
@@ -127,6 +129,18 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
     ///
     /// This method is computationally intensive and is run on a blocking thread.
     pub async fn prove(&self, input: Input, po2: Option<u32>) -> Result<(Receipt, Digest)> {
+        self.prove_with_opts(input, po2, ProverOpts::default()).await
+    }
+
+    /// Generates a RISC Zero proof of block execution using the specified [ProverOpts].
+    ///
+    /// This method is computationally intensive and is run on a blocking thread.
+    pub async fn prove_with_opts(
+        &self,
+        input: Input,
+        po2: Option<u32>,
+        opts: ProverOpts,
+    ) -> Result<(Receipt, Digest)> {
         let (elf, image_id) = self.elf()?;
 
         // prove in a blocking thread using the default prover
@@ -136,10 +150,10 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
                 env_builder.segment_limit_po2(po2);
             }
             let env = env_builder.write(&input)?.build()?;
-            default_prover().prove(env, elf)
+            default_prover().prove_with_opts(env, elf, &opts)
         })
         .await
-        .context("proving task panicked")??;
+        .context("prover task panicked")??;
 
         Ok((info.receipt, image_id))
     }
