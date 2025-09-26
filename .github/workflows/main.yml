@@ -16,6 +16,7 @@ permissions:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  RUST_LOG: "info"
   RUST_BACKTRACE: "1"
   RISC0_RUST_VERSION: 1.88.0
   RISC0_VERSION: 3.0.3
@@ -51,6 +52,7 @@ jobs:
       - name: run tests
         env:
           RISC0_DEV_MODE: true
+          RISC0_INFO: true
         run: cargo test --locked
 
       - name: Show sccache stats
