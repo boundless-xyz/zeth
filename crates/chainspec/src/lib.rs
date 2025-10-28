@@ -130,10 +130,6 @@ impl EthChainSpec for ChainSpec {
         self.chain
     }
 
-    fn base_fee_params_at_block(&self, _: u64) -> BaseFeeParams {
-        self.base_fee_params
-    }
-
     fn base_fee_params_at_timestamp(&self, _: u64) -> BaseFeeParams {
         self.base_fee_params
     }

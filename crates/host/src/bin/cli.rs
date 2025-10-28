@@ -17,7 +17,7 @@ use alloy::{
     primitives::B256,
     providers::{Provider, ProviderBuilder},
 };
-use anyhow::{Context, ensure};
+use anyhow::{Context, bail, ensure};
 use clap::{Parser, Subcommand};
 use reth_stateless::StatelessInput;
 use std::{
@@ -27,6 +27,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
+use zeth_core::Input;
 use zeth_host::{BlockProcessor, to_zkvm_input_bytes};
 
 /// Simple CLI to create Ethereum block execution proofs.
@@ -114,7 +115,7 @@ async fn get_cached_input<P: Provider>(
     processor: &BlockProcessor<P>,
     block_id: BlockId,
     cache_dir: &Path,
-) -> anyhow::Result<StatelessInput> {
+) -> anyhow::Result<Input> {
     let block_hash = match block_id {
         BlockId::Hash(hash) => hash.block_hash,
         _ => {
@@ -131,10 +132,28 @@ async fn get_cached_input<P: Provider>(
     };
 
     let cache_file = cache_dir.join(format!("input_{block_hash}.json"));
-    let input: StatelessInput = if cache_file.exists() {
+    let input: Input = if cache_file.exists() {
         println!("Cache hit for block {block_hash}. Loading from file: {cache_file:?}");
         let f = File::open(&cache_file).context("failed to open file")?;
-        serde_json::from_reader(BufReader::new(f)).context("failed to read file")?
+        let cached_input: serde_json::Value =
+            serde_json::from_reader(BufReader::new(f)).context("failed to parse file")?;
+        match &cached_input {
+            // v0.3.0 input
+            serde_json::Value::Object(map) if map.contains_key("signers") => {
+                serde_json::from_value(cached_input)?
+            }
+            // convert v0.2.0 input
+            serde_json::Value::Object(_) => {
+                let StatelessInput { block, witness }: StatelessInput =
+                    serde_json::from_value(cached_input)?;
+                let signers = zeth_host::recover_signers(block.body.transactions())?;
+                let input = Input { block, signers, witness };
+                let f = File::create(&cache_file)?;
+                serde_json::to_writer(BufWriter::new(f), &input)?;
+                input
+            }
+            _ => bail!("failed to parse JSON"),
+        }
     } else {
         println!("Cache miss for block {block_hash}. Fetching from RPC.");
         let (input, _) = processor.create_input(block_hash).await?;
