@@ -17,14 +17,13 @@ use alloy::{
     primitives::B256,
     providers::{Provider, ext::DebugApi},
     rpc::types::debug::ExecutionWitness,
-    signers::k256,
 };
 use alloy_chains::NamedChain;
 use anyhow::{Context, Result, bail};
 use guests::{HOLESKY_ELF, MAINNET_ELF, SEPOLIA_ELF};
-use k256::ecdsa::VerifyingKey;
 use reth_chainspec::{ChainSpec, EthChainSpec};
 use reth_ethereum_primitives::TransactionSigned;
+use reth_stateless::UncompressedPublicKey;
 use risc0_zkvm::{Digest, ExecutorEnvBuilder, Receipt, compute_image_id, default_prover};
 use std::sync::Arc;
 use zeth_core::Input;
@@ -156,7 +155,7 @@ pub fn to_zkvm_input_bytes(input: &Input) -> Result<Vec<u8>> {
 }
 
 /// Recovers the signing [`VerifyingKey`] from each transaction's signature.
-pub fn recover_signers<'a, I>(txs: I) -> Result<Vec<VerifyingKey>>
+pub fn recover_signers<'a, I>(txs: I) -> Result<Vec<UncompressedPublicKey>>
 where
     I: IntoIterator<Item = &'a TransactionSigned>,
 {
@@ -165,6 +164,11 @@ where
         .map(|(i, tx)| {
             tx.signature()
                 .recover_from_prehash(&tx.signature_hash())
+                .map(|keys| {
+                    UncompressedPublicKey(
+                        keys.to_encoded_point(false).as_bytes().try_into().unwrap(),
+                    )
+                })
                 .with_context(|| format!("failed to recover signature for tx #{i}"))
         })
         .collect::<Result<Vec<_>, _>>()

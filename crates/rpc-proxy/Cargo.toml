@@ -22,6 +22,7 @@ reth-evm-ethereum = { workspace = true }
 reth-primitives-traits = { workspace = true }
 reth-stateless = { workspace = true }
 revm = { workspace = true, features = ["c-kzg"] }
+revm-context-interface = "~12.0"
 risc0-ethereum-trie = { workspace = true, features = ["orphan"] }
 serde = { workspace = true }
 serde_json = { workspace = true }

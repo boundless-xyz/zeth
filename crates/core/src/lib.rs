@@ -15,19 +15,16 @@
 use alloy_consensus::{Header, private::serde};
 use alloy_primitives::{Address, B256, Bytes, KECCAK256_EMPTY, U256, keccak256, map::B256Map};
 use alloy_trie::{EMPTY_ROOT_HASH, TrieAccount};
-use k256::ecdsa::{VerifyingKey, signature::hazmat::PrehashVerifier};
 use reth_chainspec::{EthChainSpec, Hardforks};
 use reth_errors::ProviderError;
-use reth_ethereum_primitives::{Block, TransactionSigned};
-use reth_evm::{EthEvmFactory, eth::spec::EthExecutorSpec};
-use reth_primitives_traits::RecoveredBlock;
+use reth_ethereum_primitives::Block;
+use reth_evm::{EthEvmFactory, eth::spec::EthExecutorSpec, revm::bytecode::Bytecode};
 use reth_stateless::validation::StatelessValidationError;
 use reth_trie_common::HashedPostState;
-use revm_bytecode::Bytecode;
 use risc0_ethereum_trie::CachedTrie;
 use std::{cell::RefCell, collections::hash_map::Entry, fmt::Debug, marker::PhantomData};
 
-pub use reth_stateless::{ExecutionWitness, StatelessTrie};
+pub use reth_stateless::{ExecutionWitness, StatelessTrie, UncompressedPublicKey};
 
 pub type EthEvmConfig<C> = reth_evm_ethereum::EthEvmConfig<C, EthEvmFactory>;
 
@@ -42,7 +39,7 @@ pub struct Input {
     )]
     pub block: Block,
     /// List of signing public keys for each transaction in the block.
-    pub signers: Vec<VerifyingKey>,
+    pub signers: Vec<UncompressedPublicKey>,
     /// `ExecutionWitness` for the stateless validation function
     pub witness: ExecutionWitness,
 }
@@ -57,48 +54,11 @@ where
     C: EthExecutorSpec + EthChainSpec<Header = Header> + Hardforks + 'static,
 {
     let chain_spec = config.chain_spec().clone();
-    let is_homestead = chain_spec.is_homestead_active_at_block(block.number);
+    let (hash, _) = reth_stateless::stateless_validation_with_trie::<SparseState, _, _>(
+        block, signers, witness, chain_spec, config,
+    )?;
 
-    // verify the transaction signatures and compute senders
-    let senders = signers
-        .iter()
-        .zip(block.body.transactions())
-        .map(|(vk, tx)| recover_sender(vk, tx, is_homestead))
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|_| StatelessValidationError::Custom("Sender recovery failed"))?;
-
-    // create a RecoveredBlock from the senders
-    let block_hash = block.hash_slow();
-    let block = RecoveredBlock::new(block, senders, block_hash);
-
-    reth_stateless::stateless_validation_with_trie::<SparseState, _, _>(
-        block, witness, chain_spec, config,
-    )
-}
-
-/// Recovers the sending address from the given public key.
-fn recover_sender(
-    vk: &VerifyingKey,
-    tx: &TransactionSigned,
-    is_homestead: bool,
-) -> Result<Address, k256::ecdsa::Error> {
-    let sig = tx.signature();
-
-    let sig = match sig.normalize_s() {
-        None => sig.to_k256(),
-        Some(normalized) => {
-            // non-normalized signatures are only valid pre-homestead
-            if !is_homestead {
-                normalized.to_k256()
-            } else {
-                Err(k256::ecdsa::Error::from_source("signature not normalized"))
-            }
-        }
-    };
-
-    sig.and_then(|sig| vk.verify_prehash(tx.signature_hash().as_slice(), &sig))?;
-
-    Ok(Address::from_public_key(vk))
+    Ok(hash)
 }
 
 /// Zero-overhead helper for tries that only contain RLP encoded data.
