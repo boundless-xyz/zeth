@@ -19,7 +19,6 @@ revm = { version = "31.0.1", default-features = false, features = [
     "blst",
     "bn",
 ] }
-revm-context-interface = "~12.0"
 risc0-zkvm = "3.0.3"
 sha2 = { version = "=0.10.9" }
 substrate-bn = { version = "=0.6.0" }
