@@ -12,7 +12,7 @@ lto = "fat"
 [dependencies]
 blst = { version = "=0.3.15" }
 c-kzg = { version = "=2.1.5" }
-revm = { version = "31.0.1", default-features = false, features = [
+revm = { version = "31.0.2", default-features = false, features = [
     "std",
     "c-kzg",
     "portable",
