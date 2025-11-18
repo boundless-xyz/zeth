@@ -54,6 +54,13 @@ where
     C: EthExecutorSpec + EthChainSpec<Header = Header> + Hardforks + 'static,
 {
     let chain_spec = config.chain_spec().clone();
+
+    #[cfg(not(feature = "unsafe-pre-merge"))]
+    assert!(
+        reth_chainspec::EthereumHardforks::is_paris_active_at_block(&chain_spec, block.number),
+        "only post-merge blocks supported"
+    );
+
     let (hash, _) = reth_stateless::stateless_validation_with_trie::<SparseState, _, _>(
         block, signers, witness, chain_spec, config,
     )?;
