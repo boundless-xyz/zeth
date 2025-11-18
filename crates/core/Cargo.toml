@@ -9,6 +9,7 @@ alloy-consensus = { workspace = true }
 alloy-primitives = { workspace = true, features = ["map"] }
 alloy-rlp = { workspace = true }
 alloy-trie = { workspace = true }
+postcard = { workspace = true, optional = true }
 reth-chainspec = { workspace = true }
 reth-errors = { workspace = true }
 reth-ethereum-primitives = { workspace = true }
@@ -18,10 +19,15 @@ reth-primitives-traits = { workspace = true }
 reth-stateless = { workspace = true }
 reth-trie-common = { workspace = true }
 risc0-ethereum-trie = { workspace = true }
+risc0-zkvm = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_with = { workspace = true }
 
+[target.'cfg(not(target_os = "zkvm"))'.dependencies]
+tracing = { workspace = true, optional = true }
+
 [features]
+cycle-tracker = ["postcard", "risc0-zkvm", "tracing"]
 # Allow proving of pre-merge (Proof-of-Work) blocks.
 # This is considered unsafe because reth does not correctly validate all difficulty constraints.
 unsafe-pre-merge = []

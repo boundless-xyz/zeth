@@ -11,4 +11,5 @@ risc0-build = { workspace = true }
 methods = ["stateless-client"]
 
 [features]
+cycle-tracker = []
 unsafe-pre-merge = []

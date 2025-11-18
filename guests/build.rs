@@ -30,9 +30,13 @@ fn main() {
 
     let mut guest_opts = GuestOptionsBuilder::default();
 
-    // pass the unsafe-pre-merge feature through to the guest
-    #[cfg(feature = "unsafe-pre-merge")]
-    guest_opts.features(vec!["unsafe-pre-merge".to_string()]);
+    let features = vec![
+        #[cfg(feature = "unsafe-pre-merge")]
+        "unsafe-pre-merge".to_string(),
+        #[cfg(feature = "cycle-tracker")]
+        "cycle-tracker".to_string(),
+    ];
+    guest_opts.features(features);
 
     // Use Docker for deterministic builds if RISC0_USE_DOCKER is set.
     if env::var("RISC0_USE_DOCKER").is_ok() {

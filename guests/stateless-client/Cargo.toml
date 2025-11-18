@@ -27,6 +27,7 @@ zeth-chainspec = { path = "../../crates/chainspec" }
 zeth-core = { path = "../../crates/core" }
 
 [features]
+cycle-tracker = ["zeth-core/cycle-tracker"]
 unsafe-pre-merge = ["zeth-core/unsafe-pre-merge"]
 
 [patch.crates-io]

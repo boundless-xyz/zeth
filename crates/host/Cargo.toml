@@ -11,9 +11,11 @@ anyhow = { workspace = true }
 blst = { workspace = true }
 bytemuck = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
+flate2 = { workspace = true, optional = true }
 guests = { workspace = true }
 reth-chainspec = { workspace = true }
 reth-ethereum-primitives = { workspace = true }
+reth-evm = { workspace = true }
 reth-stateless = { workspace = true }
 risc0-zkvm = { workspace = true }
 serde_json = { workspace = true }
@@ -22,4 +24,5 @@ tracing-subscriber = { workspace = true }
 zeth-core = { workspace = true }
 
 [features]
+cycle-tracker = ["flate2", "guests/cycle-tracker", "zeth-core/cycle-tracker"]
 unsafe-pre-merge = ["guests/unsafe-pre-merge", "zeth-core/unsafe-pre-merge"]
