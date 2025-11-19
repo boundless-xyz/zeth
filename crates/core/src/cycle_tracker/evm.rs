@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use super::tracer::CycleTracer;
-use alloy_primitives::map::AddressSet;
 use reth_errors::BlockExecutionError;
 use reth_evm::{
     ConfigureEvm, Database, EvmEnvFor, EvmFactory, ExecutionCtxFor, OnStateHook,
@@ -21,10 +20,12 @@ use reth_evm::{
     execute::{BlockExecutor, Executor},
     revm::{
         Inspector,
-        bytecode::OpCode,
+        context::{ContextTr, JournalTr},
         database::{State, states::bundle_state::BundleRetention},
-        interpreter::{CallInputs, CallOutcome, Interpreter, interpreter_types::Jumps},
-        precompile::{PrecompileSpecId, Precompiles},
+        interpreter::{
+            CallInputs, CallOutcome, FrameInput, Interpreter, InterpreterAction,
+            interpreter_types::Jumps,
+        },
         primitives::hardfork::SpecId,
     },
 };
@@ -39,7 +40,7 @@ pub struct CycleTrackerEvmConfig<ChainSpec, EvmF>(EthEvmConfig<ChainSpec, EvmF>)
 
 impl<ChainSpec, EvmF> CycleTrackerEvmConfig<ChainSpec, EvmF> {
     pub fn new(config: EthEvmConfig<ChainSpec, EvmF>) -> Self {
-        CycleTrackerEvmConfig(config)
+        Self(config)
     }
 }
 
@@ -137,7 +138,7 @@ where
     > {
         let evm_env = self.factory.evm_env(block.header())?;
 
-        let inspector = CycleTrackerInspector::new(*evm_env.spec_id());
+        let inspector = CycleTrackerInspector::default();
         let evm = self.factory.evm_with_env_and_inspector(&mut self.db, evm_env, inspector);
 
         let ctx = self.factory.context_for_block(block)?;
@@ -190,54 +191,60 @@ where
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 struct CycleTrackerInspector<'a> {
-    precompiles: AddressSet,
-    last_opcode: Option<OpCode>,
-    // since exact cycle tracking is performance critical, we use a local Tracer instead of global
+    // last opcode executed
+    last_opcode: Option<u8>,
+    // since cycle tracking is performance-critical, we use a local tracer instead of a global one
     tracer: CycleTracer<'a>,
 }
 
-impl CycleTrackerInspector<'_> {
-    pub fn new(spec_id: SpecId) -> Self {
-        let precompiles = Precompiles::new(PrecompileSpecId::from_spec_id(spec_id));
-
-        Self {
-            precompiles: AddressSet::from_iter(precompiles.inner().keys().copied()),
-            last_opcode: None,
-            tracer: CycleTracer::new(),
-        }
+impl<CTX: ContextTr> Inspector<CTX> for CycleTrackerInspector<'_> {
+    #[inline]
+    fn initialize_interp(&mut self, _interp: &mut Interpreter, _context: &mut CTX) {
+        // make sure the last opcode is reset, even if the interpreter is reused
+        self.last_opcode = None;
     }
-}
 
-impl<CTX> Inspector<CTX> for CycleTrackerInspector<'_> {
     #[inline]
     fn step(&mut self, interp: &mut Interpreter, _context: &mut CTX) {
-        if let Some(opcode) = OpCode::new(interp.bytecode.opcode()) {
-            // keep track of the last opcode executed
-            self.last_opcode = Some(opcode);
-            self.tracer.enter_with_gas(opcode.get(), interp.gas.spent())
-        }
+        let opcode = interp.bytecode.opcode();
+
+        // keep track of the last opcode executed
+        self.last_opcode = Some(opcode);
+        self.tracer.enter_with_gas(opcode, interp.gas.spent())
     }
 
     #[inline]
     fn step_end(&mut self, interp: &mut Interpreter, _context: &mut CTX) {
         if let Some(opcode) = self.last_opcode.take() {
-            self.tracer.exit_with_gas(opcode.get(), interp.gas.spent())
+            let mut gas = interp.gas.spent();
+
+            // Calls and creations include the gas limit in the gas cost. We need to subtract this
+            // amount because we want to track how much gas the opcode itself consumes.
+            if let Some(InterpreterAction::NewFrame(frame)) = &interp.bytecode.action {
+                let gas_limit = match frame {
+                    FrameInput::Empty => 0,
+                    FrameInput::Call(input) => input.gas_limit,
+                    FrameInput::Create(input) => input.gas_limit,
+                };
+                gas -= gas_limit;
+            }
+            self.tracer.exit_with_gas(opcode, gas)
         }
     }
 
     #[inline]
-    fn call(&mut self, _context: &mut CTX, inputs: &mut CallInputs) -> Option<CallOutcome> {
-        if self.precompiles.contains(&inputs.bytecode_address) {
+    fn call(&mut self, context: &mut CTX, inputs: &mut CallInputs) -> Option<CallOutcome> {
+        if context.journal_ref().precompile_addresses().contains(&inputs.bytecode_address) {
             self.tracer.enter_with_gas(inputs.bytecode_address, 0);
         }
         None
     }
 
     #[inline]
-    fn call_end(&mut self, _context: &mut CTX, inputs: &CallInputs, outcome: &mut CallOutcome) {
-        if self.precompiles.contains(&inputs.bytecode_address) {
+    fn call_end(&mut self, context: &mut CTX, inputs: &CallInputs, outcome: &mut CallOutcome) {
+        if context.journal_ref().precompile_addresses().contains(&inputs.bytecode_address) {
             self.tracer.exit_with_gas(inputs.bytecode_address, outcome.result.gas.spent());
         }
     }

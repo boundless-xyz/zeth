@@ -25,9 +25,12 @@ pub const CYCLE_TRACKER_FD: u32 = 0x10;
 /// Identifier for a traced code section.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum TraceId<'a> {
+    // Custom name
     #[serde(borrow)]
     Custom(Cow<'a, str>),
+    // Opcode execution
     Opcode(u8),
+    // Precompile invocation
     Precompile(Address),
 }
 
