@@ -58,11 +58,12 @@ def analyze_traces(trace_files, output_csv):
             "min cycles",
             "median cycles",
             "max cycles",
+            "total cycles"
         ]
         writer.writerow(header)
 
         for name, traces in data.items():
-            cycles_list = [c for c, _ in traces]
+            cycle_list = [c for c, _ in traces]
             cpg_list = [c // g for c, g in traces if g > 0]
             if not cpg_list:
                 continue
@@ -74,9 +75,10 @@ def analyze_traces(trace_files, output_csv):
                     min(cpg_list),
                     int(statistics.median(cpg_list)),
                     max(cpg_list),
-                    min(cycles_list),
-                    int(statistics.median(cycles_list)),
-                    max(cycles_list),
+                    min(cycle_list),
+                    int(statistics.median(cycle_list)),
+                    max(cycle_list),
+                    sum(cycle_list)
                 ]
             )
 
@@ -88,7 +90,7 @@ def main():
 
     build()
 
-    files = glob.glob("cache/input_0xa04482cfa72fff3bfbd3197c335be7e180fe3e1ebe02a98ddf8417e71c7a60e0.json")
+    files = glob.glob("cache/input_0x*.json")
     print(f"Profiling {len(files)} blocks with {args.jobs} jobs...")
 
     with tempfile.TemporaryDirectory() as temp_dir:
