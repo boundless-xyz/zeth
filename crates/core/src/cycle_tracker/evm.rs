@@ -35,10 +35,12 @@ use reth_primitives_traits::{
 };
 use std::fmt::Debug;
 
+/// A wrapper around [`EthEvmConfig`] that enables cycle tracking during execution.
 #[derive(Debug, Clone)]
 pub struct CycleTrackerEvmConfig<ChainSpec, EvmF>(EthEvmConfig<ChainSpec, EvmF>);
 
 impl<ChainSpec, EvmF> CycleTrackerEvmConfig<ChainSpec, EvmF> {
+    /// Creates a new cycle tracking configuration wrapping the provided inner config.
     pub fn new(config: EthEvmConfig<ChainSpec, EvmF>) -> Self {
         Self(config)
     }

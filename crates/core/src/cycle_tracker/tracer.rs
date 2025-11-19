@@ -41,24 +41,20 @@ mod platform {
 
 /// Guest-side tracer for recording cycle counts.
 ///
-/// Records enter/exit events and sends them over the trace file descriptor.
-/// Uses batching to minimize syscall overhead.
+/// This struct is responsible for serializing trace events using [postcard] with COBS framing and
+/// writing them to the trace file descriptor.
+///
+/// # Optimization Strategy
+///
+/// To minimize I/O overhead, the tracer employs a "write-combining" strategy:
+/// If `exit` is called immediately after `enter` for the same ID (a leaf span), the tracer
+/// calculates the diff and writes a single event.
 ///
 /// # Performance Note
 ///
-/// For hot loops (like EVM opcode execution), instantiate this struct directly
-/// and keep it alive to avoid the overhead of Thread Local Storage (TLS) associated
-/// with the global [`enter`] and [`exit`] functions.
-///
-/// # Example
-///
-/// ```rust
-/// # use zeth_core::cycle_tracker::guest::CycleTracer;
-/// let mut tracer = CycleTracer::new();
-/// tracer.enter("my_function");
-/// // ... work ...
-/// tracer.exit("my_function");
-/// ```
+/// For hot loops (like EVM opcode execution), instantiate this struct directly and keep it alive to
+/// avoid the overhead of Thread Local Storage (TLS) associated with the global [`enter`] and
+/// [`exit`] functions.
 #[derive(Clone, Debug)]
 pub struct CycleTracer<'a> {
     // use a Box to keep the struct itself small (stack-friendly)
@@ -82,7 +78,7 @@ impl<'a> Drop for CycleTracer<'a> {
 }
 
 impl<'a> CycleTracer<'a> {
-    /// Creates a new tracer with a 48-byte buffer.
+    /// Creates a new tracer with a default 48-byte serialization buffer.
     pub fn new() -> Self {
         Self { buf: Box::new([0u8; 48]), last_enter: None }
     }
@@ -104,6 +100,11 @@ impl<'a> CycleTracer<'a> {
         self.enter_with_gas(id, 0)
     }
 
+    /// Records the start of a traced section with an associated gas metric.
+    ///
+    /// It captures the current cycle count and the provided `gas` value (typically cumulative gas
+    /// spent). The `gas` value is stored and used later in [`CycleTracer::exit_with_gas`] to
+    /// calculate the exact amount of gas consumed during this span (`end_gas - start_gas`).
     #[inline]
     pub fn enter_with_gas(&mut self, id: impl IntoTraceId<'a>, gas: u64) {
         let id = id.into_trace_id();
@@ -119,14 +120,16 @@ impl<'a> CycleTracer<'a> {
     }
 
     /// Records the end of a traced section.
-    ///
-    /// If the pending enter matches this exit, sends an [`EventKind::Total`] with the duration.
-    /// Otherwise, flushes the mismatched enter and sends a separate [`EventKind::Exit`].
     #[inline(always)]
     pub fn exit(&mut self, id: impl IntoTraceId<'a>) {
         self.exit_with_gas(id, 0)
     }
 
+    /// Records the end of a traced section with an associated gas metric.
+    ///
+    /// It captures the current cycle count and provided `gas` value (typically cumulative gas
+    /// spent).If the pending enter event matches this exit (same ID), the tracer emits a single
+    /// event containing the net cycles and gas used.
     pub fn exit_with_gas(&mut self, id: impl IntoTraceId<'a>, gas: u64) {
         let cycles = platform::cycle_count();
         let id = id.into_trace_id();
@@ -134,7 +137,7 @@ impl<'a> CycleTracer<'a> {
             None => self.send(EventKind::Exit, id, cycles, gas),
             Some((enter_id, enter_cycles, enter_gas)) => {
                 if enter_id == id {
-                    self.send(EventKind::Total, id, cycles - enter_cycles, gas - enter_gas);
+                    self.send(EventKind::Complete, id, cycles - enter_cycles, gas - enter_gas);
                 } else {
                     self.send(EventKind::Enter, enter_id, enter_cycles, enter_gas);
                     self.send(EventKind::Exit, id, cycles, gas);
@@ -233,16 +236,16 @@ mod tests {
 
         // Small event (should fit in 48 bytes)
         let event = TraceFdEvent {
-            kind: EventKind::Total,
+            kind: EventKind::Complete,
             id: TraceId::Precompile(Address::repeat_byte(0xff)),
             cycles: u64::MAX,
             gas: u64::MAX,
         };
-        let buf_len = tracer.buf.len();
+        let scratch_len = tracer.buf.len();
         let encoded = tracer.serialize(&event).unwrap();
         println!("encoded: {}", Bytes::copy_from_slice(encoded));
         assert_eq!(event, postcard::from_bytes_cobs(encoded).unwrap());
-        assert_eq!(buf_len, tracer.buf.len()); // must fit in original buffer
+        assert_eq!(scratch_len, tracer.buf.len()); // must fit in original buffer
 
         let event =
             TraceFdEvent { kind: EventKind::Enter, id: TraceId::Opcode(0), cycles: 0, gas: 0 };
@@ -258,7 +261,7 @@ mod tests {
         };
         let encoded = tracer.serialize(&event).unwrap();
         assert_eq!(event, postcard::from_bytes_cobs(encoded).unwrap());
-        assert!(buf_len < tracer.buf.len());
+        assert!(scratch_len < tracer.buf.len());
 
         // repeat to make sure the new buffer can be reused
         let encoded = tracer.serialize(&event).unwrap();

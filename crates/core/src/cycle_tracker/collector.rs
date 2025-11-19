@@ -69,7 +69,7 @@ impl<F: FnMut(TraceEvent)> TraceProcessor<F> {
 
     fn process(&mut self, event: TraceFdEvent) {
         match event.kind {
-            EventKind::Total => {
+            EventKind::Complete => {
                 let id = event.id.into_owned();
                 let depth = self.stack.len();
                 (self.callback)(TraceEvent { id, depth, cycles: event.cycles, gas: event.gas });

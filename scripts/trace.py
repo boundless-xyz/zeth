@@ -1,18 +1,18 @@
-#!/usr/bin/env python3
-
-import argparse, glob, gzip, json, os, statistics, subprocess, sys, tempfile
+import argparse, csv, glob, gzip, json, os, statistics, subprocess, sys, tempfile
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 
 # Configuration
 ETH_RPC_URL = os.environ.get("ETH_RPC_URL", "https://ethereum-rpc.publicnode.com")
 CLI_BIN = "./target/release/cli"
-CSV_FILE = "traces.csv"
+CSV_FILE = "opcode-profile.csv"
 
 
 def build():
     print("Building with cycle-tracker enabled...")
-    subprocess.check_call(["cargo", "build", "--release", "--features", "cycle-tracker"])
+    subprocess.check_call(
+        ["cargo", "build", "--release", "--features", "cycle-tracker"]
+    )
 
 
 def run_trace(file_path, output_dir):
@@ -38,26 +38,47 @@ def run_trace(file_path, output_dir):
         return None
 
 
-def analyze_traces(trace_files, csv_file):
+def analyze_traces(trace_files, output_csv):
     print("Analyzing trace data...")
 
     data = defaultdict(list)
     for filename in trace_files:
         with gzip.open(filename, "rb") as f:
-            for name, traces in json.load(f).items():
-                data[name].extend(traces)
+            for name, entries in json.load(f).items():
+                data[name].extend((c, g) for c, g in entries)
 
-    with open(csv_file, "w") as f:
-        f.write("name,count,min cost,median cost,max cost,min cycles,median cycles,max cycles\n")
+    with open(output_csv, "w") as f:
+        writer = csv.writer(f)
+        header = [
+            "name",
+            "count",
+            "min cpg",
+            "median cpg",
+            "max cpg",
+            "min cycles",
+            "median cycles",
+            "max cycles",
+        ]
+        writer.writerow(header)
+
         for name, traces in data.items():
-            cycles = [cycles for (cycles, gas) in traces if gas > 0]
-            costs = [cycles // gas for (cycles, gas) in traces if gas > 0]
-            if cycles and costs:
-                f.write(
-                    f"{name},{len(costs)},"
-                    f"{min(costs)},{statistics.median(costs)},{max(costs)},"
-                    f"{min(cycles)},{statistics.median(cycles)},{max(cycles)}\n"
-                )
+            cycles_list = [c for c, _ in traces]
+            cpg_list = [c // g for c, g in traces if g > 0]
+            if not cpg_list:
+                continue
+
+            writer.writerow(
+                [
+                    name,
+                    len(cpg_list),
+                    min(cpg_list),
+                    int(statistics.median(cpg_list)),
+                    max(cpg_list),
+                    min(cycles_list),
+                    int(statistics.median(cycles_list)),
+                    max(cycles_list),
+                ]
+            )
 
 
 def main():
@@ -67,7 +88,7 @@ def main():
 
     build()
 
-    files = glob.glob("cache/input_0x*.json")
+    files = glob.glob("cache/input_0xa04482cfa72fff3bfbd3197c335be7e180fe3e1ebe02a98ddf8417e71c7a60e0.json")
     print(f"Profiling {len(files)} blocks with {args.jobs} jobs...")
 
     with tempfile.TemporaryDirectory() as temp_dir:
@@ -76,7 +97,8 @@ def main():
         generated_files = []
         with ThreadPoolExecutor(max_workers=args.jobs) as executor:
             for res in executor.map(lambda file: run_trace(file, temp_dir), files):
-                if res: generated_files.append(res)
+                if res:
+                    generated_files.append(res)
 
         analyze_traces(generated_files, CSV_FILE)
 

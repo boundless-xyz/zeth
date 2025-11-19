@@ -99,9 +99,12 @@ impl<'a> IntoTraceId<'a> for Address {
 /// Internal event type for wire protocol.
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub(crate) enum EventKind {
+    /// Marks the start of a traced scope (e.g., entering an opcode or function).
     Enter,
+    /// Marks the end of a traced scope that was previously opened with [`EventKind::Enter`].
     Exit,
-    Total,
+    /// Represents a complete, atomic execution of a scope (Enter + Exit).
+    Complete,
 }
 
 /// The packet sent over the trace file descriptor.

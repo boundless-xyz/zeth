@@ -49,6 +49,11 @@ mod implementation {
         precompiles: AddressMap<&'static str>,
     }
 
+    /// Manages the collection and saving of execution cycle traces from the zkVM guest.
+    ///
+    /// This struct runs on the host and listens to trace events streamed from the guest via a
+    /// dedicated file descriptor. It aggregates these events and saves them to a file for later
+    /// analysis.
     impl HostCycleTracker {
         const UNKNOWN_LABEL: &'static str = "unknown";
 
@@ -63,6 +68,7 @@ mod implementation {
             }
         }
 
+        /// Attaches the cycle tracker to the zkVM executor environment.
         pub fn attach<'a>(&'a mut self, env_builder: &mut ExecutorEnvBuilder<'a>) {
             let collector = TraceCollector::new(move |event| {
                 self.process(event);
@@ -86,6 +92,10 @@ mod implementation {
             self.metrics.entry(key).or_default().push((event.cycles, event.gas));
         }
 
+        /// Saves the collected trace metrics to a Gzip-compressed JSON file.
+        ///
+        /// The output path is determined by the `TRACE_FILE` environment variable, defaulting to
+        /// `trace.json.gz` if unset.
         pub fn save(self) -> anyhow::Result<()> {
             let path = env::var_os(TRACE_FILE_ENV).unwrap_or(DEFAULT_TRACE_FILE.into());
             let file = File::create(path)?;

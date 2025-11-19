@@ -6,7 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 # Configuration
 ETH_RPC_URL = os.environ.get("ETH_RPC_URL", "https://ethereum-rpc.publicnode.com")
 CLI_BIN = "./target/release/cli"
-CSV_FILE = "benchmarks.csv"
+CSV_FILE = "block-benchmarks.csv"
 
 
 def build():
