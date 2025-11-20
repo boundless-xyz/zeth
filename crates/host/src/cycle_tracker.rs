@@ -35,7 +35,7 @@ mod implementation {
             precompile::{PrecompileSpecId, Precompiles},
         },
     };
-    use std::{collections::BTreeMap, env, fs::File, io::BufWriter};
+    use std::{collections::HashMap, env, fs::File, io::BufWriter};
     use zeth_core::{
         EthEvmConfig,
         cycle_tracker::{CYCLE_TRACKER_FD, TraceCollector, TraceEvent, TraceId},
@@ -45,7 +45,7 @@ mod implementation {
     const DEFAULT_TRACE_FILE: &str = "trace.json.gz";
 
     pub struct HostCycleTracker {
-        metrics: BTreeMap<String, Vec<(u64, u64)>>,
+        metrics: HashMap<String, Vec<(u64, u64)>>,
         precompiles: AddressMap<&'static str>,
     }
 
@@ -63,7 +63,7 @@ mod implementation {
             let precompiles = Precompiles::new(PrecompileSpecId::from_spec_id(spec_id)).inner();
 
             Self {
-                metrics: BTreeMap::default(),
+                metrics: HashMap::default(),
                 precompiles: precompiles.iter().map(|(a, p)| (*a, p.id().name())).collect(),
             }
         }

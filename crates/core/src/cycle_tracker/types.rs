@@ -23,7 +23,7 @@ use std::{borrow::Cow, fmt::Display};
 pub const CYCLE_TRACKER_FD: u32 = 0x10;
 
 /// Identifier for a traced code section.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash, Serialize, Deserialize)]
 pub enum TraceId<'a> {
     // Custom name
     #[serde(borrow)]

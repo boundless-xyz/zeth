@@ -57,9 +57,10 @@ mod platform {
 /// [`exit`] functions.
 #[derive(Clone, Debug)]
 pub struct CycleTracer<'a> {
-    // use a Box to keep the struct itself small (stack-friendly)
-    buf: Box<[u8]>,
+    /// Stores the pending `enter` event that has not yet been written to the trace.
     last_enter: Option<(TraceId<'a>, u64, u64)>,
+    /// A pre-allocated scratch buffer used for serializing individual events.
+    scratch: [u8; 64],
 }
 
 impl<'a> Default for CycleTracer<'a> {
@@ -79,8 +80,9 @@ impl<'a> Drop for CycleTracer<'a> {
 
 impl<'a> CycleTracer<'a> {
     /// Creates a new tracer with a default 48-byte serialization buffer.
-    pub fn new() -> Self {
-        Self { buf: Box::new([0u8; 48]), last_enter: None }
+    #[inline]
+    pub const fn new() -> Self {
+        Self { last_enter: None, scratch: [0; 64] }
     }
 
     /// Records the start of a traced section.
@@ -105,7 +107,6 @@ impl<'a> CycleTracer<'a> {
     /// It captures the current cycle count and the provided `gas` value (typically cumulative gas
     /// spent). The `gas` value is stored and used later in [`CycleTracer::exit_with_gas`] to
     /// calculate the exact amount of gas consumed during this span (`end_gas - start_gas`).
-    #[inline]
     pub fn enter_with_gas(&mut self, id: impl IntoTraceId<'a>, gas: u64) {
         let id = id.into_trace_id();
         let cycles = platform::cycle_count();
@@ -147,8 +148,6 @@ impl<'a> CycleTracer<'a> {
     }
 
     /// Sends the corresponding event via the file descriptor.
-    /// # Panics
-    /// It panics if serialization fails (OOM or internal error).
     fn send(&mut self, kind: EventKind, id: TraceId, cycles: u64, gas: u64) {
         let event = TraceFdEvent { kind, id, cycles, gas };
         let encoded = self.serialize(&event).expect("should serialize");
@@ -156,19 +155,10 @@ impl<'a> CycleTracer<'a> {
     }
 
     fn serialize<T: Serialize + ?Sized>(&mut self, value: &T) -> postcard::Result<&mut [u8]> {
-        match postcard::to_slice_cobs(value, &mut self.buf) {
-            Ok(encoded) => {
-                let len = encoded.len();
-                Ok(&mut self.buf[..len])
-            }
+        match postcard::to_slice_cobs(value, &mut self.scratch) {
+            Ok(encoded) => Ok(encoded),
             Err(postcard::Error::SerializeBufferFull) => {
-                // if buf is not sufficient, allocate a new vec and use that as the new buf
-                let mut buf = postcard::to_allocvec_cobs(value)?;
-                let len = buf.len();
-                // we have allocated with capacity, so we might as well use everything
-                buf.resize(buf.capacity(), 0);
-                self.buf = buf.into_boxed_slice();
-                Ok(&mut self.buf[..len])
+                panic!("buffer too small, use shorter ID")
             }
             Err(err) => Err(err),
         }
@@ -176,7 +166,7 @@ impl<'a> CycleTracer<'a> {
 }
 
 thread_local! {
-    static GLOBAL_TRACER: RefCell<CycleTracer<'static>> =  RefCell::new(CycleTracer::new()) ;
+    static GLOBAL_TRACER: RefCell<CycleTracer<'static>> =  const { RefCell::new(CycleTracer::new()) };
 }
 
 /// Records the start of a traced section using the thread-local global tracer.
@@ -228,42 +218,35 @@ impl Drop for Span {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use alloy_primitives::{Address, Bytes};
+    use alloy_primitives::Address;
 
     #[test]
     fn serialize() {
         let mut tracer = CycleTracer::new();
 
-        // Small event (should fit in 48 bytes)
+        // Custom event
+        let event = TraceFdEvent {
+            kind: EventKind::Complete,
+            id: TraceId::Custom("x".repeat(32).into()),
+            cycles: u64::MAX,
+            gas: u64::MAX,
+        };
+        let encoded = tracer.serialize(&event).unwrap();
+        assert_eq!(event, postcard::from_bytes_cobs(encoded).unwrap());
+
+        // Precompile event
         let event = TraceFdEvent {
             kind: EventKind::Complete,
             id: TraceId::Precompile(Address::repeat_byte(0xff)),
             cycles: u64::MAX,
             gas: u64::MAX,
         };
-        let scratch_len = tracer.buf.len();
         let encoded = tracer.serialize(&event).unwrap();
-        println!("encoded: {}", Bytes::copy_from_slice(encoded));
         assert_eq!(event, postcard::from_bytes_cobs(encoded).unwrap());
-        assert_eq!(scratch_len, tracer.buf.len()); // must fit in original buffer
 
+        // Opcode event
         let event =
             TraceFdEvent { kind: EventKind::Enter, id: TraceId::Opcode(0), cycles: 0, gas: 0 };
-        let encoded = tracer.serialize(&event).unwrap();
-        assert_eq!(event, postcard::from_bytes_cobs(encoded).unwrap());
-
-        // Large event (should trigger resize)
-        let event = TraceFdEvent {
-            kind: EventKind::Enter,
-            id: TraceId::Custom("x".repeat(100).into()),
-            cycles: 0,
-            gas: 0,
-        };
-        let encoded = tracer.serialize(&event).unwrap();
-        assert_eq!(event, postcard::from_bytes_cobs(encoded).unwrap());
-        assert!(scratch_len < tracer.buf.len());
-
-        // repeat to make sure the new buffer can be reused
         let encoded = tracer.serialize(&event).unwrap();
         assert_eq!(event, postcard::from_bytes_cobs(encoded).unwrap());
     }

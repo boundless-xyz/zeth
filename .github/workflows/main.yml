@@ -51,7 +51,7 @@ jobs:
       - name: run tests
         env:
           RISC0_DEV_MODE: true
-        run: cargo test --locked
+        run: cargo test --locked --all-features
 
       - name: Show sccache stats
         run: sccache --show-stats
