@@ -29,7 +29,7 @@ use serde_json::{Value, json};
 use std::sync::Arc;
 use tracing::{debug, error, field, info, instrument};
 use tracing_actix_web::TracingLogger;
-use zeth_rpc_proxy::execution_witness;
+use zeth_rpc_proxy::{PreimageLookup, execution_witness};
 
 /// This struct holds the application state that we want to share across all handlers.
 struct AppState {
@@ -37,6 +37,7 @@ struct AppState {
     upstream_url: String,
     provider: DynProvider,
     evm_config: Arc<EthEvmConfig>,
+    lookup: Arc<PreimageLookup>,
 }
 
 #[derive(Parser, Debug)]
@@ -57,6 +58,11 @@ struct Args {
     /// The number of allowed Compute Units per second.
     #[clap(long, default_value_t = 1000)]
     pub rpc_retry_cu: u64,
+
+    /// The number of nibbles to precompute for the preimage lookup table.
+    /// Higher values increase startup time but reduce RPC calls for missing storage keys.
+    #[clap(long, default_value_t = 5, value_parser = clap::value_parser!(u8).range(..=8))]
+    pub preimage_cache_nibbles: u8,
 }
 
 /// This function is the entry point for all incoming RPC requests.
@@ -178,7 +184,7 @@ async fn handle_debug_execution_witness(
     }
 
     let block_id = params_vec[0];
-    match execution_witness(data.evm_config.clone(), &data.provider, block_id).await {
+    match execution_witness(data.evm_config.clone(), &data.provider, block_id, &data.lookup).await {
         Ok(witness) => HttpResponse::Ok().json(json!({
             "jsonrpc": "2.0",
             "id": id,
@@ -219,6 +225,9 @@ async fn main() -> anyhow::Result<()> {
     };
     info!("EVM config: {}", chain);
 
+    // Initialize the preimage lookup table
+    let lookup = Arc::new(PreimageLookup::new(args.preimage_cache_nibbles));
+
     // Create the shared application state.
     // web::Data handles the atomic reference counting for safe sharing across threads.
     let app_state = web::Data::new(AppState {
@@ -226,6 +235,7 @@ async fn main() -> anyhow::Result<()> {
         upstream_url: args.rpc_url,
         provider: provider.erased(),
         evm_config,
+        lookup,
     });
 
     info!(
