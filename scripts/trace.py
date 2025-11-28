@@ -20,7 +20,7 @@ def run_trace(file_path, output_dir):
     block_hash = os.path.basename(file_path).replace("input_", "").replace(".json", "")
 
     # Create a unique path inside the temporary directory
-    trace_file = os.path.join(output_dir, f"trace_{block_hash}.json")
+    trace_file = os.path.join(output_dir, f"trace_{block_hash}.json.gz")
 
     print(f"Tracing block: {block_hash}")
 
