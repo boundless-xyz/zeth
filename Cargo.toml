@@ -58,6 +58,7 @@ itertools = "0.14"
 serde = "1.0"
 serde_with = "3.14"
 serde_json = "1.0"
+tempfile = "3.23"
 thiserror = "2"
 tokio = { version = "1.46", features = ['full'] }
 tracing = "0.1"
