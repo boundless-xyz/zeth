@@ -167,6 +167,7 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
         // 2. Try legacy versions
         for format in LEGACY_FORMATS {
             if let Some(input) = format.load_from_dir(hash, cache_dir)? {
+                // Migration: Save as current version
                 if let Err(err) = self.save_to_cache(&input, cache_dir) {
                     tracing::warn!("Failed to save migrated cache: {}", err);
                 }
@@ -177,7 +178,9 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
 
         tracing::info!("Cache miss for block {}. Fetching from RPC.", header.hash);
         let (input, _) = self.create_input(header.hash).await?;
-        self.save_to_cache(&input, cache_dir)?;
+        if let Err(e) = self.save_to_cache(&input, cache_dir) {
+            tracing::warn!("Failed to save cache: {}", e);
+        }
 
         Ok(input)
     }
