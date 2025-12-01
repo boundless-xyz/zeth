@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Updated core dependency to **Reth v1.9.1**, which includes support for the upcoming Osaka hardfork.
+- Updated core dependency to **Reth v1.9**, which includes support for the upcoming Osaka hardfork.
 
 ### ⚡️ Features
 
