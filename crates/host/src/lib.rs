@@ -229,6 +229,7 @@ impl CacheFormat for Current {
     fn file_name(&self, hash: BlockHash) -> String {
         format!("input_{hash}.v2.json")
     }
+
     fn load(&self, reader: BufReader<File>) -> Result<Input> {
         Ok(serde_json::from_reader(reader)?)
     }
@@ -240,6 +241,7 @@ impl CacheFormat for LegacyV1 {
     fn file_name(&self, hash: BlockHash) -> String {
         format!("input_{hash}.json")
     }
+
     fn load(&self, reader: BufReader<File>) -> Result<Input> {
         #[serde_with::serde_as]
         #[derive(serde::Deserialize)]
