@@ -14,6 +14,7 @@
 
 use crate::{
     db::{PreflightDb, ProviderConfig, ProviderDb},
+    lookup::PreimageLookup,
     trie::{handle_modified_account, handle_new_account, handle_removed_account},
 };
 use alloy::{
@@ -34,6 +35,7 @@ pub async fn execution_witness<E, P, N>(
     evm_config: E,
     provider: &P,
     block_id: BlockNumberOrTag,
+    lookup: &PreimageLookup,
 ) -> Result<ExecutionWitness>
 where
     E: ConfigureEvm + 'static,
@@ -100,8 +102,9 @@ where
                 handle_removed_account(provider, block_hash, addr, &mut state_trie).await?
             }
             (true, true) => {
-                let storage = storage_tries.get_mut(&addr).unwrap();
-                handle_modified_account(provider, block_hash, addr, &account.storage, storage)
+                let storage = &account.storage;
+                let storage_trie = storage_tries.get_mut(&addr).unwrap();
+                handle_modified_account(provider, block_hash, addr, storage, storage_trie, lookup)
                     .await?;
             }
             _ => {}

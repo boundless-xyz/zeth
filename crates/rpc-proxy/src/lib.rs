@@ -13,8 +13,10 @@
 // limitations under the License.
 
 mod db;
+mod lookup;
 mod rpc;
 mod trie;
 mod witness;
 
+pub use lookup::PreimageLookup;
 pub use witness::execution_witness;
