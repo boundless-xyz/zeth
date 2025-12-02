@@ -14,21 +14,25 @@
 
 use alloy::{
     eips::BlockId,
-    primitives::B256,
+    primitives::{B256, BlockHash},
     providers::{Provider, ext::DebugApi},
     rpc::types::debug::ExecutionWitness,
-    signers::k256,
 };
 use alloy_chains::NamedChain;
 use anyhow::{Context, Result, bail};
 use guests::{HOLESKY_ELF, MAINNET_ELF, SEPOLIA_ELF};
-use k256::ecdsa::VerifyingKey;
 use reth_chainspec::{ChainSpec, EthChainSpec};
-use reth_ethereum_primitives::TransactionSigned;
+use reth_ethereum_primitives::{Block, TransactionSigned};
+use reth_stateless::UncompressedPublicKey;
 use risc0_zkvm::{
     Digest, ExecutorEnvBuilder, ProverOpts, Receipt, compute_image_id, default_prover,
 };
-use std::sync::Arc;
+use std::{
+    fs::File,
+    io::{BufReader, BufWriter, Write},
+    path::Path,
+    sync::Arc,
+};
 use zeth_core::Input;
 
 /// Processes Ethereum blocks, including creating inputs, validating, and proving.
@@ -157,6 +161,123 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
 
         Ok((info.receipt, image_id))
     }
+
+    /// Fetches input, using the filesystem cache if available.
+    /// Handles migration from legacy formats automatically.
+    pub async fn get_input_with_cache(&self, block_id: BlockId, cache_dir: &Path) -> Result<Input> {
+        let block_hash = match block_id {
+            BlockId::Hash(hash) => hash.block_hash,
+            _ => {
+                // First, get the block header to determine the canonical hash for caching.
+                let header = self
+                    .provider()
+                    .get_block(block_id)
+                    .await?
+                    .with_context(|| format!("block {block_id} not found"))?
+                    .header;
+
+                header.hash
+            }
+        };
+
+        // 1. Try current version
+        if let Some(input) = Current.load_from_dir(block_hash, cache_dir)? {
+            return Ok(input);
+        }
+        // 2. Try legacy versions
+        for format in LEGACY_FORMATS {
+            if let Some(input) = format.load_from_dir(block_hash, cache_dir)? {
+                // Migration: Save as current version
+                if let Err(err) = self.save_to_cache(&input, cache_dir) {
+                    tracing::warn!("Failed to save migrated cache: {}", err);
+                }
+
+                return Ok(input);
+            }
+        }
+
+        tracing::info!("Cache miss for block {block_hash}. Fetching from RPC.");
+        let (input, _) = self.create_input(block_hash).await?;
+        if let Err(e) = self.save_to_cache(&input, cache_dir) {
+            tracing::warn!("Failed to save cache: {}", e);
+        }
+
+        Ok(input)
+    }
+
+    /// Performs an atomic write of the input.
+    fn save_to_cache(&self, input: &Input, cache_dir: &Path) -> Result<()> {
+        let temp_file =
+            tempfile::NamedTempFile::new_in(cache_dir).context("failed to create temp file")?;
+        {
+            let mut w = BufWriter::new(&temp_file);
+            serde_json::to_writer(&mut w, input).context("failed to serialize input")?;
+            w.flush()?;
+        }
+
+        let hash = input.block.header.hash_slow();
+        let cache_path = cache_dir.join(Current.file_name(hash));
+        temp_file.persist(cache_path).context("failed to persist cache file")?;
+
+        Ok(())
+    }
+}
+
+const LEGACY_FORMATS: &[&dyn CacheFormat] = &[&LegacyV1];
+
+trait CacheFormat: Send + Sync {
+    fn file_name(&self, hash: BlockHash) -> String;
+    fn load(&self, reader: BufReader<File>) -> Result<Input>;
+
+    fn load_from_dir(&self, hash: BlockHash, dir: &Path) -> Result<Option<Input>> {
+        let path = dir.join(self.file_name(hash));
+        if !path.exists() {
+            return Ok(None);
+        }
+
+        tracing::info!("Cache hit for block {}. Loading from file: {:?}", hash, path);
+        let f = File::open(&path)?;
+        let input = self.load(BufReader::new(f)).context("failed to load input from cache file")?;
+
+        Ok(Some(input))
+    }
+}
+
+struct Current;
+
+impl CacheFormat for Current {
+    fn file_name(&self, hash: BlockHash) -> String {
+        format!("input_{hash}.v2.json")
+    }
+
+    fn load(&self, reader: BufReader<File>) -> Result<Input> {
+        Ok(serde_json::from_reader(reader)?)
+    }
+}
+
+struct LegacyV1;
+
+impl CacheFormat for LegacyV1 {
+    fn file_name(&self, hash: BlockHash) -> String {
+        format!("input_{hash}.json")
+    }
+
+    fn load(&self, reader: BufReader<File>) -> Result<Input> {
+        #[serde_with::serde_as]
+        #[derive(serde::Deserialize)]
+        struct InputV1 {
+            #[serde_as(as = "zeth_core::serde_bincode_compat::Block")]
+            block: Block,
+            witness: ExecutionWitness,
+        }
+
+        let legacy: InputV1 =
+            serde_json::from_reader(reader).context("failed to deserialize V1")?;
+        // v1 input misses the signers
+        let signers = recover_signers(legacy.block.body.transactions())?;
+
+        Ok(Input { block: legacy.block, signers, witness: legacy.witness })
+    }
 }
 
 /// Serializes the input into a byte slice suitable for the RISC Zero ZKVM.
@@ -170,7 +291,7 @@ pub fn to_zkvm_input_bytes(input: &Input) -> Result<Vec<u8>> {
 }
 
 /// Recovers the signing [`VerifyingKey`] from each transaction's signature.
-pub fn recover_signers<'a, I>(txs: I) -> Result<Vec<VerifyingKey>>
+pub fn recover_signers<'a, I>(txs: I) -> Result<Vec<UncompressedPublicKey>>
 where
     I: IntoIterator<Item = &'a TransactionSigned>,
 {
@@ -179,6 +300,11 @@ where
         .map(|(i, tx)| {
             tx.signature()
                 .recover_from_prehash(&tx.signature_hash())
+                .map(|keys| {
+                    UncompressedPublicKey(
+                        keys.to_encoded_point(false).as_bytes().try_into().unwrap(),
+                    )
+                })
                 .with_context(|| format!("failed to recover signature for tx #{i}"))
         })
         .collect::<Result<Vec<_>, _>>()
