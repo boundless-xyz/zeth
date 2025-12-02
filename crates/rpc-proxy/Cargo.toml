@@ -15,6 +15,7 @@ async-trait = { workspace = true }
 blst = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
 itertools = { workspace = true }
+rayon = "1.11"
 reqwest = { version = "0.12.20", features = ["json"] }
 reth-chainspec = { workspace = true }
 reth-evm = { workspace = true }
