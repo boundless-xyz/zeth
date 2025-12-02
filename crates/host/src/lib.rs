@@ -24,7 +24,9 @@ use guests::{HOLESKY_ELF, MAINNET_ELF, SEPOLIA_ELF};
 use reth_chainspec::{ChainSpec, EthChainSpec};
 use reth_ethereum_primitives::{Block, TransactionSigned};
 use reth_stateless::UncompressedPublicKey;
-use risc0_zkvm::{Digest, ExecutorEnvBuilder, Receipt, compute_image_id, default_prover};
+use risc0_zkvm::{
+    Digest, ExecutorEnvBuilder, ProverOpts, Receipt, compute_image_id, default_prover,
+};
 use std::{
     fs::File,
     io::{BufReader, BufWriter, Write},
@@ -131,6 +133,18 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
     ///
     /// This method is computationally intensive and is run on a blocking thread.
     pub async fn prove(&self, input: Input, po2: Option<u32>) -> Result<(Receipt, Digest)> {
+        self.prove_with_opts(input, po2, ProverOpts::default()).await
+    }
+
+    /// Generates a RISC Zero proof of block execution using the specified [ProverOpts].
+    ///
+    /// This method is computationally intensive and is run on a blocking thread.
+    pub async fn prove_with_opts(
+        &self,
+        input: Input,
+        po2: Option<u32>,
+        opts: ProverOpts,
+    ) -> Result<(Receipt, Digest)> {
         let (elf, image_id) = self.elf()?;
 
         // prove in a blocking thread using the default prover
@@ -140,10 +154,10 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
                 env_builder.segment_limit_po2(po2);
             }
             let env = env_builder.write(&input)?.build()?;
-            default_prover().prove(env, elf)
+            default_prover().prove_with_opts(env, elf, &opts)
         })
         .await
-        .context("proving task panicked")??;
+        .context("prover task panicked")??;
 
         Ok((info.receipt, image_id))
     }
@@ -151,22 +165,28 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
     /// Fetches input, using the filesystem cache if available.
     /// Handles migration from legacy formats automatically.
     pub async fn get_input_with_cache(&self, block_id: BlockId, cache_dir: &Path) -> Result<Input> {
-        // First, get the block header to determine the canonical hash for caching.
-        let header = self
-            .provider
-            .get_block(block_id)
-            .await?
-            .with_context(|| format!("block {block_id} not found"))?
-            .header;
-        let hash = header.hash;
+        let block_hash = match block_id {
+            BlockId::Hash(hash) => hash.block_hash,
+            _ => {
+                // First, get the block header to determine the canonical hash for caching.
+                let header = self
+                    .provider()
+                    .get_block(block_id)
+                    .await?
+                    .with_context(|| format!("block {block_id} not found"))?
+                    .header;
+
+                header.hash
+            }
+        };
 
         // 1. Try current version
-        if let Some(input) = Current.load_from_dir(hash, cache_dir)? {
+        if let Some(input) = Current.load_from_dir(block_hash, cache_dir)? {
             return Ok(input);
         }
         // 2. Try legacy versions
         for format in LEGACY_FORMATS {
-            if let Some(input) = format.load_from_dir(hash, cache_dir)? {
+            if let Some(input) = format.load_from_dir(block_hash, cache_dir)? {
                 // Migration: Save as current version
                 if let Err(err) = self.save_to_cache(&input, cache_dir) {
                     tracing::warn!("Failed to save migrated cache: {}", err);
@@ -176,8 +196,8 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
             }
         }
 
-        tracing::info!("Cache miss for block {}. Fetching from RPC.", header.hash);
-        let (input, _) = self.create_input(header.hash).await?;
+        tracing::info!("Cache miss for block {block_hash}. Fetching from RPC.");
+        let (input, _) = self.create_input(block_hash).await?;
         if let Err(e) = self.save_to_cache(&input, cache_dir) {
             tracing::warn!("Failed to save cache: {}", e);
         }
