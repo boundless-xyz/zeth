@@ -7370,8 +7370,12 @@ dependencies = [
  "reth-ethereum-primitives",
  "reth-stateless",
  "risc0-zkvm",
+ "serde",
  "serde_json",
+ "serde_with",
+ "tempfile",
  "tokio",
+ "tracing",
  "tracing-subscriber 0.3.22",
  "zeth-core",
 ]
