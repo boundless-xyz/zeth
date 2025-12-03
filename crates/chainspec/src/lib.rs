@@ -22,7 +22,7 @@ use alloy_eips::{
 use alloy_evm::eth::spec::EthExecutorSpec;
 use alloy_genesis::Genesis;
 use alloy_hardforks::{
-    EthereumHardfork, EthereumHardforks, ForkCondition, Hardfork, holesky, mainnet, sepolia,
+    EthereumHardfork, EthereumHardforks, ForkCondition, Hardfork, hoodi, mainnet, sepolia,
 };
 use alloy_primitives::{Address, B256, U256, address};
 use reth_chainspec::{Chain, DepositContract, EthChainSpec, Hardforks, NamedChain};
@@ -37,8 +37,8 @@ const MAINNET_DEPOSIT_CONTRACT_ADDRESS: Address =
     address!("0x00000000219ab540356cbb839cbe05303d7705fa");
 const SEPOLIA_DEPOSIT_CONTRACT_ADDRESS: Address =
     address!("0x7f02c3e3c98b133055b8b348b2ac625669ed295d");
-const HOLESKY_DEPOSIT_CONTRACT_ADDRESS: Address =
-    address!("0x4242424242424242424242424242424242424242");
+const HOODI_DEPOSIT_CONTRACT_ADDRESS: Address =
+    address!("0x00000000219ab540356cBB839Cbe05303d7705Fa");
 
 pub static MAINNET: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let spec = ChainSpec {
@@ -68,15 +68,15 @@ pub static SEPOLIA: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     spec.into()
 });
 
-pub static HOLESKY: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
+pub static HOODI: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let spec = ChainSpec {
-        chain: NamedChain::Holesky.into(),
-        forks: EthereumHardfork::holesky().into(),
-        deposit_contract_address: Some(HOLESKY_DEPOSIT_CONTRACT_ADDRESS),
+        chain: NamedChain::Hoodi.into(),
+        forks: EthereumHardfork::hoodi().into(),
+        deposit_contract_address: Some(HOODI_DEPOSIT_CONTRACT_ADDRESS),
         base_fee_params: BaseFeeParams::ethereum(),
         blob_params: BlobScheduleBlobParams::default().with_scheduled([
-            (holesky::HOLESKY_BPO1_TIMESTAMP, BlobParams::bpo1()),
-            (holesky::HOLESKY_BPO2_TIMESTAMP, BlobParams::bpo2()),
+            (hoodi::HOODI_BPO1_TIMESTAMP, BlobParams::bpo1()),
+            (hoodi::HOODI_BPO2_TIMESTAMP, BlobParams::bpo2()),
         ]),
     };
     spec.into()
@@ -224,7 +224,7 @@ mod tests {
     }
 
     #[test]
-    fn holesky() {
-        assert_eq(&HOLESKY, &reth_chainspec::HOLESKY);
+    fn hoodi() {
+        assert_eq(&HOODI, &reth_chainspec::HOODI);
     }
 }

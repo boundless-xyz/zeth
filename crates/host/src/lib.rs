@@ -20,7 +20,7 @@ use alloy::{
 };
 use alloy_chains::NamedChain;
 use anyhow::{Context, Result, bail};
-use guests::{HOLESKY_ELF, MAINNET_ELF, SEPOLIA_ELF};
+use guests::{HOODI_ELF, MAINNET_ELF, SEPOLIA_ELF};
 use reth_chainspec::{ChainSpec, EthChainSpec};
 use reth_ethereum_primitives::{Block, TransactionSigned};
 use reth_stateless::UncompressedPublicKey;
@@ -84,7 +84,7 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
         let elf = match self.chain() {
             NamedChain::Mainnet => MAINNET_ELF,
             NamedChain::Sepolia => SEPOLIA_ELF,
-            NamedChain::Holesky => HOLESKY_ELF,
+            NamedChain::Hoodi => HOODI_ELF,
             chain => bail!("unsupported chain for proving: {chain}"),
         };
         let image_id = compute_image_id(elf).context("failed to compute image id")?;
