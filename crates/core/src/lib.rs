@@ -28,6 +28,9 @@ pub use reth_stateless::{ExecutionWitness, StatelessTrie, UncompressedPublicKey}
 
 pub type EthEvmConfig<C> = reth_evm_ethereum::EthEvmConfig<C, EthEvmFactory>;
 
+#[cfg(feature = "cycle-tracker")]
+pub mod cycle_tracker;
+
 pub mod serde_bincode_compat {
     pub type Block<'a> = reth_primitives_traits::serde_bincode_compat::Block<
         'a,
@@ -66,6 +69,9 @@ where
         reth_chainspec::EthereumHardforks::is_paris_active_at_block(&chain_spec, block.number),
         "only post-merge blocks supported"
     );
+
+    #[cfg(all(feature = "cycle-tracker", target_os = "zkvm"))]
+    let config = cycle_tracker::guest::CycleTrackerEvmConfig::new(config);
 
     let (hash, _) = reth_stateless::stateless_validation_with_trie::<SparseState, _, _>(
         block, signers, witness, chain_spec, config,
