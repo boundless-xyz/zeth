@@ -14,7 +14,7 @@
 
 use alloy::{
     eips::BlockId,
-    primitives::B256,
+    primitives::{B256, BlockHash},
     providers::{Provider, ext::DebugApi},
     rpc::types::debug::ExecutionWitness,
 };
@@ -22,10 +22,17 @@ use alloy_chains::NamedChain;
 use anyhow::{Context, Result, bail};
 use guests::{HOLESKY_ELF, MAINNET_ELF, SEPOLIA_ELF};
 use reth_chainspec::{ChainSpec, EthChainSpec};
-use reth_ethereum_primitives::TransactionSigned;
+use reth_ethereum_primitives::{Block, TransactionSigned};
 use reth_stateless::UncompressedPublicKey;
-use risc0_zkvm::{Digest, ExecutorEnvBuilder, Receipt, compute_image_id, default_prover};
-use std::sync::Arc;
+use risc0_zkvm::{
+    Digest, ExecutorEnvBuilder, ProverOpts, Receipt, compute_image_id, default_prover,
+};
+use std::{
+    fs::File,
+    io::{BufReader, BufWriter, Write},
+    path::Path,
+    sync::Arc,
+};
 use zeth_core::Input;
 
 mod cycle_tracker;
@@ -128,6 +135,18 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
     ///
     /// This method is computationally intensive and is run on a blocking thread.
     pub async fn prove(&self, input: Input, po2: Option<u32>) -> Result<(Receipt, Digest)> {
+        self.prove_with_opts(input, po2, ProverOpts::default()).await
+    }
+
+    /// Generates a RISC Zero proof of block execution using the specified [ProverOpts].
+    ///
+    /// This method is computationally intensive and is run on a blocking thread.
+    pub async fn prove_with_opts(
+        &self,
+        input: Input,
+        po2: Option<u32>,
+        opts: ProverOpts,
+    ) -> Result<(Receipt, Digest)> {
         let (elf, image_id) = self.elf()?;
         let chain_spec = self.chain_spec.clone();
 
@@ -143,7 +162,7 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
                 }
                 tracer.attach(&mut env_builder);
                 let env = env_builder.write(&input)?.build()?;
-                default_prover().prove(env, elf)?
+                default_prover().prove_with_opts(env, elf, &opts)?
             };
             // save trace to file
             tracer.save().context("failed to save traces")?;
@@ -151,9 +170,126 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
             Ok::<_, anyhow::Error>(proof)
         })
         .await
-        .context("proving task panicked")??;
+        .context("prover task panicked")??;
 
         Ok((proof.receipt, image_id))
+    }
+
+    /// Fetches input, using the filesystem cache if available.
+    /// Handles migration from legacy formats automatically.
+    pub async fn get_input_with_cache(&self, block_id: BlockId, cache_dir: &Path) -> Result<Input> {
+        let block_hash = match block_id {
+            BlockId::Hash(hash) => hash.block_hash,
+            _ => {
+                // First, get the block header to determine the canonical hash for caching.
+                let header = self
+                    .provider()
+                    .get_block(block_id)
+                    .await?
+                    .with_context(|| format!("block {block_id} not found"))?
+                    .header;
+
+                header.hash
+            }
+        };
+
+        // 1. Try current version
+        if let Some(input) = Current.load_from_dir(block_hash, cache_dir)? {
+            return Ok(input);
+        }
+        // 2. Try legacy versions
+        for format in LEGACY_FORMATS {
+            if let Some(input) = format.load_from_dir(block_hash, cache_dir)? {
+                // Migration: Save as current version
+                if let Err(err) = self.save_to_cache(&input, cache_dir) {
+                    tracing::warn!("Failed to save migrated cache: {}", err);
+                }
+
+                return Ok(input);
+            }
+        }
+
+        tracing::info!("Cache miss for block {block_hash}. Fetching from RPC.");
+        let (input, _) = self.create_input(block_hash).await?;
+        if let Err(e) = self.save_to_cache(&input, cache_dir) {
+            tracing::warn!("Failed to save cache: {}", e);
+        }
+
+        Ok(input)
+    }
+
+    /// Performs an atomic write of the input.
+    fn save_to_cache(&self, input: &Input, cache_dir: &Path) -> Result<()> {
+        let temp_file =
+            tempfile::NamedTempFile::new_in(cache_dir).context("failed to create temp file")?;
+        {
+            let mut w = BufWriter::new(&temp_file);
+            serde_json::to_writer(&mut w, input).context("failed to serialize input")?;
+            w.flush()?;
+        }
+
+        let hash = input.block.header.hash_slow();
+        let cache_path = cache_dir.join(Current.file_name(hash));
+        temp_file.persist(cache_path).context("failed to persist cache file")?;
+
+        Ok(())
+    }
+}
+
+const LEGACY_FORMATS: &[&dyn CacheFormat] = &[&LegacyV1];
+
+trait CacheFormat: Send + Sync {
+    fn file_name(&self, hash: BlockHash) -> String;
+    fn load(&self, reader: BufReader<File>) -> Result<Input>;
+
+    fn load_from_dir(&self, hash: BlockHash, dir: &Path) -> Result<Option<Input>> {
+        let path = dir.join(self.file_name(hash));
+        if !path.exists() {
+            return Ok(None);
+        }
+
+        tracing::info!("Cache hit for block {}. Loading from file: {:?}", hash, path);
+        let f = File::open(&path)?;
+        let input = self.load(BufReader::new(f)).context("failed to load input from cache file")?;
+
+        Ok(Some(input))
+    }
+}
+
+struct Current;
+
+impl CacheFormat for Current {
+    fn file_name(&self, hash: BlockHash) -> String {
+        format!("input_{hash}.v2.json")
+    }
+
+    fn load(&self, reader: BufReader<File>) -> Result<Input> {
+        Ok(serde_json::from_reader(reader)?)
+    }
+}
+
+struct LegacyV1;
+
+impl CacheFormat for LegacyV1 {
+    fn file_name(&self, hash: BlockHash) -> String {
+        format!("input_{hash}.json")
+    }
+
+    fn load(&self, reader: BufReader<File>) -> Result<Input> {
+        #[serde_with::serde_as]
+        #[derive(serde::Deserialize)]
+        struct InputV1 {
+            #[serde_as(as = "zeth_core::serde_bincode_compat::Block")]
+            block: Block,
+            witness: ExecutionWitness,
+        }
+
+        let legacy: InputV1 =
+            serde_json::from_reader(reader).context("failed to deserialize V1")?;
+        // v1 input misses the signers
+        let signers = recover_signers(legacy.block.body.transactions())?;
+
+        Ok(Input { block: legacy.block, signers, witness: legacy.witness })
     }
 }
 

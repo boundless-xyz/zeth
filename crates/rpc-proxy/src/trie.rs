@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::rpc::DebugApi;
+use crate::{lookup::PreimageLookup, rpc::DebugApi};
 use alloy::{
     network::Network,
     primitives::{Address, B256, keccak256, map::B256Set},
@@ -73,6 +73,7 @@ pub(crate) async fn handle_modified_account<P, N>(
     address: Address,
     storage: &StorageWithOriginalValues,
     storage_trie: &mut Trie,
+    lookup: &PreimageLookup,
 ) -> Result<()>
 where
     P: Provider<N>,
@@ -117,11 +118,15 @@ where
         return Ok(());
     }
 
-    debug!(%address, "Using debug_storageRangeAt to find preimages for orphan nodes");
-
     let mut missing_storage_keys = B256Set::default();
     for prefix in unresolvable {
-        let storage_key = provider.get_next_storage_key(block_hash, address, prefix).await?;
+        let storage_key = match lookup.find(&prefix) {
+            Some(preimage) => preimage,
+            None => {
+                debug!(%address, ?prefix, "Using debug_storageRangeAt to find preimage");
+                provider.get_next_storage_key(block_hash, address, prefix).await?
+            }
+        };
         missing_storage_keys.insert(storage_key);
     }
 

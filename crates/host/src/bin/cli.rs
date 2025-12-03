@@ -12,22 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloy::{
-    eips::BlockId,
-    primitives::B256,
-    providers::{Provider, ProviderBuilder},
-};
-use anyhow::{Context, bail, ensure};
+use alloy::{eips::BlockId, primitives::B256, providers::ProviderBuilder};
+use anyhow::{Context, ensure};
 use clap::{Parser, Subcommand};
-use reth_stateless::StatelessInput;
 use std::{
     cmp::PartialEq,
-    fs::{self, File},
-    io::{BufReader, BufWriter},
-    path::{Path, PathBuf},
-    sync::Arc,
+    fs::{self},
+    path::PathBuf,
 };
-use zeth_core::Input;
 use zeth_host::{BlockProcessor, to_zkvm_input_bytes};
 
 /// Simple CLI to create Ethereum block execution proofs.
@@ -80,10 +72,10 @@ async fn main() -> anyhow::Result<()> {
 
     // set up the provider and processor
     let provider = ProviderBuilder::new().connect(&cli.eth_rpc_url).await?;
-    let processor = BlockProcessor::new(Arc::new(provider)).await?;
+    let processor = BlockProcessor::new(provider).await?;
     println!("Current chain: {}", processor.chain());
 
-    let input = get_cached_input(&processor, cli.block, &cli.cache_dir).await?;
+    let input = processor.get_input_with_cache(cli.block, &cli.cache_dir).await?;
     let block_hash = input.block.hash_slow();
 
     println!(
@@ -109,56 +101,4 @@ async fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
-}
-
-async fn get_cached_input<P: Provider>(
-    processor: &BlockProcessor<P>,
-    block_id: BlockId,
-    cache_dir: &Path,
-) -> anyhow::Result<Input> {
-    // First, get the block header to determine the canonical hash for caching.
-    let header = processor
-        .provider()
-        .get_block(block_id)
-        .await?
-        .with_context(|| format!("block {block_id} not found"))?
-        .header;
-
-    let cache_file = cache_dir.join(format!("input_{}.json", header.hash));
-    let input: Input = if cache_file.exists() {
-        println!("Cache hit for block {}. Loading from file: {:?}", header.hash, &cache_file);
-        let f = File::open(&cache_file).context("failed to open file")?;
-        let cached_input: serde_json::Value =
-            serde_json::from_reader(BufReader::new(f)).context("failed to parse file")?;
-        match &cached_input {
-            // v0.3.0 input
-            serde_json::Value::Object(map) if map.contains_key("signers") => {
-                serde_json::from_value(cached_input)?
-            }
-            // convert v0.2.0 input
-            serde_json::Value::Object(_) => {
-                let StatelessInput { block, witness }: StatelessInput =
-                    serde_json::from_value(cached_input)?;
-                let signers = zeth_host::recover_signers(block.body.transactions())?;
-                let input = Input { block, signers, witness };
-                let f = File::create(&cache_file)?;
-                serde_json::to_writer(BufWriter::new(f), &input)?;
-                input
-            }
-            _ => bail!("failed to parse JSON"),
-        }
-    } else {
-        println!("Cache miss for block {}. Fetching from RPC.", header.hash);
-        let (input, _) = processor.create_input(header.hash).await?;
-
-        // Save the newly fetched input to the cache.
-        println!("Writing new input to cache: {:?}", &cache_file);
-        let f = File::create(&cache_file).context("failed to create file")?;
-        serde_json::to_writer(BufWriter::new(f), &input).context("failed to write file")?;
-
-        input
-    };
-    ensure!(input.block.hash_slow() == header.hash);
-
-    Ok(input)
 }

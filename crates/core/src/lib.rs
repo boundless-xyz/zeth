@@ -31,15 +31,21 @@ pub type EthEvmConfig<C> = reth_evm_ethereum::EthEvmConfig<C, EthEvmFactory>;
 #[cfg(feature = "cycle-tracker")]
 pub mod cycle_tracker;
 
+pub mod serde_bincode_compat {
+    pub type Block<'a> = reth_primitives_traits::serde_bincode_compat::Block<
+        'a,
+        reth_ethereum_primitives::TransactionSigned,
+        alloy_consensus::Header,
+    >;
+}
+
 /// `StatelessInput` is a convenience structure for serializing the input needed
 /// for the stateless validation function.
 #[serde_with::serde_as]
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Input {
     /// The block being executed in the stateless validation function
-    #[serde_as(
-        as = "reth_primitives_traits::serde_bincode_compat::Block<reth_ethereum_primitives::TransactionSigned, alloy_consensus::Header>"
-    )]
+    #[serde_as(as = "serde_bincode_compat::Block")]
     pub block: Block,
     /// List of signing public keys for each transaction in the block.
     pub signers: Vec<UncompressedPublicKey>,
