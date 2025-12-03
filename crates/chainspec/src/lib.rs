@@ -202,15 +202,17 @@ impl EthChainSpec for ChainSpec {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use reth_chainspec::BaseFeeParamsKind;
 
     fn assert_eq(spec: &ChainSpec, reth_spec: &reth_chainspec::ChainSpec) {
         assert_eq!(spec.chain, reth_spec.chain);
-        assert_eq!(spec.blob_params, reth_spec.blob_params);
         assert_eq!(
             spec.forks.values().cloned().collect::<Vec<_>>(),
             reth_spec.forks_iter().map(|(_, f)| f).collect::<Vec<_>>(),
         );
-        assert_eq!(spec.deposit_contract_address, reth_spec.deposit_contract.map(|c| c.address),);
+        assert_eq!(spec.deposit_contract_address, reth_spec.deposit_contract.map(|c| c.address));
+        assert_eq!(BaseFeeParamsKind::Constant(spec.base_fee_params), reth_spec.base_fee_params);
+        assert_eq!(spec.blob_params, reth_spec.blob_params);
     }
 
     #[test]
