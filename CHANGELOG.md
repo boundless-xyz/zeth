@@ -7,12 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Updated core dependency to **Reth v1.9**, which includes support for the upcoming Osaka hardfork.
+- Update core dependency to Reth `v1.9.3`, which includes support for the upcoming Osaka hardfork.
+- Update zkVM dependency to r0vm `v3.0.4` and rust `v1.91.1`.
 
 ### ⚡️ Features
 
 - New feature `unsafe-pre-merge` must be enabled to prove pre-merge blocks.
-- Implemented versioned caching for input files. This ensures backward compatibility with older cache files by converting them to the current schema on the fly.
+- Implement versioned caching for input files. This ensures backward compatibility with older cache files by converting them to the current schema on the fly.
 
 ## [0.2.1](https://github.com/boundless-xyz/zeth/releases/tag/v0.2.1) - 2025-08-05
 
