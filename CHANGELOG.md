@@ -7,7 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Updated core dependency to **Reth v1.9**, which includes support for the upcoming Osaka hardfork.
+- Updated core dependency to Reth `v1.9.3`, which includes support for the upcoming Osaka hardfork.
+- Update zkVM dependency to r0vm `v3.0.4` and rust `v1.91.1`.
 
 ### ⚡️ Features
 
