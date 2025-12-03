@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use zeth_chainspec::HOLESKY;
+use zeth_chainspec::HOODI;
 use zeth_core::EthEvmConfig;
 
 pub fn main() {
-    stateless_client::entry(EthEvmConfig::new(HOLESKY.clone()));
+    stateless_client::entry(EthEvmConfig::new(HOODI.clone()));
 }
