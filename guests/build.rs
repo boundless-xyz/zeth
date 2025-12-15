@@ -15,7 +15,7 @@
 use risc0_build::{DockerOptionsBuilder, GuestOptionsBuilder};
 use std::{collections::HashMap, env, path::PathBuf};
 
-const RISC0_RUST_VERSION: &str = "1.88.0";
+const RISC0_RUST_VERSION: &str = "1.91.1";
 
 fn main() {
     // This build script is responsible for building the guest code and embedding the resulting
