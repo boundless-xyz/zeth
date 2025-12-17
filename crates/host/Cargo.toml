@@ -5,8 +5,7 @@ edition = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-alloy = { workspace = true }
-alloy-chains = { workspace = true }
+alloy = { workspace = true, features = ["provider-debug-api"] }
 anyhow = { workspace = true }
 blst = { workspace = true }
 bytemuck = { workspace = true }

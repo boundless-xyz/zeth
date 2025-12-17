@@ -6,10 +6,8 @@ rust-version = { workspace = true }
 
 [dependencies]
 actix-web = "4"
-alloy = { workspace = true }
-alloy-chains = { workspace = true }
+alloy = { workspace = true, features = ["rlp"] }
 alloy-primitives = { workspace = true }
-alloy-trie = { workspace = true }
 anyhow = { workspace = true }
 async-trait = { workspace = true }
 blst = { workspace = true }
@@ -21,8 +19,9 @@ reth-chainspec = { workspace = true }
 reth-evm = { workspace = true }
 reth-evm-ethereum = { workspace = true }
 reth-primitives-traits = { workspace = true }
+reth-revm = { workspace = true }
 reth-stateless = { workspace = true }
-revm = { workspace = true, features = ["c-kzg"] }
+reth-trie-common = { workspace = true }
 risc0-ethereum-trie = { workspace = true, features = ["orphan"] }
 serde = { workspace = true }
 serde_json = { workspace = true }

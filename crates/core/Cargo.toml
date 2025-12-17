@@ -5,10 +5,8 @@ edition = { workspace = true }
 rust-version = { workspace = true }
 
 [dependencies]
-alloy-consensus = { workspace = true }
 alloy-primitives = { workspace = true, features = ["map"] }
 alloy-rlp = { workspace = true }
-alloy-trie = { workspace = true }
 reth-chainspec = { workspace = true }
 reth-errors = { workspace = true }
 reth-ethereum-primitives = { workspace = true }

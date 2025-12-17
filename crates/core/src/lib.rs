@@ -12,15 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloy_consensus::{Header, private::serde};
 use alloy_primitives::{Address, B256, Bytes, KECCAK256_EMPTY, U256, keccak256, map::B256Map};
-use alloy_trie::{EMPTY_ROOT_HASH, TrieAccount};
 use reth_chainspec::{EthChainSpec, Hardforks};
 use reth_errors::ProviderError;
 use reth_ethereum_primitives::Block;
 use reth_evm::{EthEvmFactory, eth::spec::EthExecutorSpec, revm::bytecode::Bytecode};
+use reth_primitives_traits::Header;
 use reth_stateless::validation::StatelessValidationError;
-use reth_trie_common::HashedPostState;
+use reth_trie_common::{EMPTY_ROOT_HASH, HashedPostState, TrieAccount};
 use risc0_ethereum_trie::CachedTrie;
 use std::{cell::RefCell, collections::hash_map::Entry, fmt::Debug, marker::PhantomData};
 
@@ -32,7 +31,7 @@ pub mod serde_bincode_compat {
     pub type Block<'a> = reth_primitives_traits::serde_bincode_compat::Block<
         'a,
         reth_ethereum_primitives::TransactionSigned,
-        alloy_consensus::Header,
+        reth_primitives_traits::Header,
     >;
 }
 

@@ -18,10 +18,9 @@ use alloy::{
     providers::{Provider, ext::DebugApi},
     rpc::types::debug::ExecutionWitness,
 };
-use alloy_chains::NamedChain;
 use anyhow::{Context, Result, bail};
 use guests::{HOLESKY_ELF, MAINNET_ELF, SEPOLIA_ELF};
-use reth_chainspec::{ChainSpec, EthChainSpec};
+use reth_chainspec::{ChainSpec, EthChainSpec, NamedChain};
 use reth_ethereum_primitives::{Block, TransactionSigned};
 use reth_stateless::UncompressedPublicKey;
 use risc0_zkvm::{

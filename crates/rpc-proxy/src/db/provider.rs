@@ -19,9 +19,9 @@ use alloy::{
     transports::TransportError,
 };
 use alloy_primitives::{Address, B256, BlockHash, StorageKey, U256, map::B256HashMap};
-use revm::{
+use reth_revm::{
     Database as RevmDatabase,
-    database::DBErrorMarker,
+    db::DBErrorMarker,
     primitives::KECCAK_EMPTY,
     state::{AccountInfo, Bytecode},
 };
