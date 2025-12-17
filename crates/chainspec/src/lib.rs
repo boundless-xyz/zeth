@@ -14,13 +14,12 @@
 
 use alloy_eips::{
     BlobScheduleBlobParams,
-    eip1559::BaseFeeParams,
     eip2124::{ForkFilter, ForkId, Head},
     eip7840::BlobParams,
 };
 use alloy_genesis::Genesis;
 use alloy_primitives::{Address, B256, U256, address};
-use reth_chainspec::{Chain, DepositContract, EthChainSpec, Hardforks, NamedChain};
+use reth_chainspec::{BaseFeeParams, Chain, DepositContract, EthChainSpec, Hardforks, NamedChain};
 use reth_ethereum_forks::{
     EthereumHardfork, EthereumHardforks, ForkCondition, Hardfork, holesky, mainnet, sepolia,
 };
