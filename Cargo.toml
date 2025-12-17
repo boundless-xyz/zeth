@@ -16,24 +16,23 @@ guests = { path = "guests" }
 zeth-core = { path = "crates/core" }
 zeth-chainspec = { path = "crates/chainspec" }
 
-# risc0
+# r0vm
 risc0-build = "3.0.4"
 risc0-zkvm = "3.0.4"
-risc0-ethereum-trie = { git = "https://github.com/risc0/risc0-ethereum.git", tag = "v3.0.1" }
 
 # reth
-reth-primitives-traits = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
-reth-primitives = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
-reth-ethereum-primitives = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
-reth-stateless = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
 reth-chainspec = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
 reth-errors = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
+reth-ethereum-forks = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
+reth-ethereum-primitives = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
 reth-evm = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
 reth-evm-ethereum = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
 reth-network-peers = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
-reth-trie-common = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
-reth-ethereum-forks = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
+reth-primitives = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
+reth-primitives-traits = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
 reth-revm = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
+reth-stateless = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
+reth-trie-common = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.9.3" }
 
 # alloy
 alloy = { version = "1.0.37" }
@@ -41,6 +40,9 @@ alloy-eips = { version = "1.0.37", default-features = false }
 alloy-genesis = { version = "1.0.37", default-features = false }
 alloy-primitives = { version = "1.4.1" }
 alloy-rlp = { version = "0.3.10", default-features = false }
+
+# trie
+risc0-ethereum-trie = { git = "https://github.com/risc0/risc0-ethereum.git", tag = "v3.0.1" }
 
 # misc
 anyhow = "1.0"
