@@ -27,12 +27,12 @@ window.BENCHMARK_DATA = {
         "benches": [
           {
             "name": "total_cycles",
-            "value": 0,
+            "value": 900792320,
             "unit": "cycles"
           },
           {
             "name": "user_cycles",
-            "value": 0,
+            "value": 737425694,
             "unit": "cycles"
           }
         ]
