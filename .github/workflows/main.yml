@@ -12,7 +12,8 @@ concurrency:
 # this is needed to gain access via OIDC to the S3 bucket for caching
 permissions:
   id-token: write
-  contents: read
+  contents: write  # needed for gh-pages benchmark data
+  pull-requests: write  # needed for PR comments
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -53,7 +54,31 @@ jobs:
         env:
           RISC0_DEV_MODE: true
           RISC0_INFO: true
-        run: cargo test --locked
+        run: cargo test --locked 2>&1 | tee test-output.log
+
+      - name: Extract cycle metrics
+        id: cycles
+        run: |
+          TOTAL=$(grep -oP '\d+(?= total cycles)' test-output.log || echo "0")
+          USER=$(grep -oP '\d+(?= user cycles)' test-output.log || echo "0")
+          echo "total=$TOTAL" >> $GITHUB_OUTPUT
+          echo '[{"name":"total_cycles","unit":"cycles","value":'$TOTAL'},{"name":"user_cycles","unit":"cycles","value":'$USER'}]' > benchmark-results.json
+          echo "Extracted metrics: total=$TOTAL, user=$USER, paging=$PAGING"
+
+      - name: Store benchmark result
+        uses: risc0/github-action-benchmark@v1.19.3
+        with:
+          tool: 'customSmallerIsBetter'
+          output-file-path: benchmark-results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          # Store benchmark data in gh-pages branch
+          auto-push: ${{ github.ref == 'refs/heads/main' }}
+          # Comment on PRs with comparison
+          comment-on-alert: true
+          alert-threshold: '105%'
+          fail-on-alert: true
+          # Compare against previous results
+          comment-always: ${{ github.event_name == 'pull_request' }}
 
       - name: Show sccache stats
         run: sccache --show-stats
