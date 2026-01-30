@@ -10,8 +10,10 @@ codegen-units = 1
 lto = "fat"
 
 [dependencies]
+alloy-primitives = { version = "*", features = ["tiny-keccak"] }
 blst = { version = "=0.3.15" }
 c-kzg = { version = "=2.1.5" }
+revm = { version = "*", default-features = false, features = ["blst", "bn", "c-kzg"] }
 risc0-zkvm = "3.0.4"
 sha2 = { version = "=0.10.9" }
 substrate-bn = { version = "=0.6.0" }

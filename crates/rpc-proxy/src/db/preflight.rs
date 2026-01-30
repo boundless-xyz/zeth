@@ -1,4 +1,4 @@
-// Copyright 2025 RISC Zero, Inc.
+// Copyright 2026 RISC Zero, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -250,6 +250,7 @@ impl<N: Network, P: Provider<N>> RevmDatabase for PreflightDb<ProviderDb<N, P>> 
             balance: acc.balance,
             nonce: acc.nonce,
             code_hash: acc.code_hash,
+            account_id: None,
             code: None, // will be queried later using code_by_hash
         }))
     }
