@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769795683689,
+  "lastUpdate": 1769796389803,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -77,6 +77,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "validation_cycles",
             "value": 726888821,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "welzwo@gmail.com",
+            "name": "Wolfgang Welz",
+            "username": "Wollac"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6a3714d199203d638d046e2d8570c016d830e60d",
+          "message": "chore: Update Reth to version 1.10.2 (#198)\n\n* reduce dependencies\n\n* cleanup Cargo.toml\n\n* run Dependabot\n\n* cleanups\n\n* chore: Update Reth to version 1.10.2 (#200)\n\n* update reth to v1.10.2\n\n* update license header\n\n* update license header\n\n* add accidentally removed Cargo.lock",
+          "timestamp": "2026-01-30T19:04:01+01:00",
+          "tree_id": "a80f318798e55c6cadea4e364c30d24c7f8c30f9",
+          "url": "https://github.com/boundless-xyz/zeth/commit/6a3714d199203d638d046e2d8570c016d830e60d"
+        },
+        "date": 1769796388959,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 888274944,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 728227295,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 10504980,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 717690435,
             "unit": "cycles"
           }
         ]
