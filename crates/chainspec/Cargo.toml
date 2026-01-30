@@ -2,6 +2,9 @@
 name = "zeth-chainspec"
 version = { workspace = true }
 edition = { workspace = true }
+rust-version = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
 
 [dependencies]
 alloy-eips = { workspace = true }
@@ -12,3 +15,6 @@ reth-ethereum-forks = { workspace = true }
 reth-evm = { workspace = true }
 reth-network-peers = { workspace = true }
 reth-primitives-traits = { workspace = true }
+
+[lints]
+workspace = true

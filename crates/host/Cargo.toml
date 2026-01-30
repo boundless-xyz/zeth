@@ -3,6 +3,11 @@ name = "zeth-host"
 version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+[features]
+unsafe-pre-merge = ["guests/unsafe-pre-merge", "zeth-core/unsafe-pre-merge"]
 
 [dependencies]
 alloy = { workspace = true, features = ["provider-debug-api"] }
@@ -28,5 +33,5 @@ zeth-core = { workspace = true }
 serde_json = { workspace = true, features = ["raw_value"] }
 test-log = { workspace = true }
 
-[features]
-unsafe-pre-merge = ["guests/unsafe-pre-merge", "zeth-core/unsafe-pre-merge"]
+[lints]
+workspace = true

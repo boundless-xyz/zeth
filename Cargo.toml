@@ -5,10 +5,16 @@ members = ["crates/*", "guests"]
 [workspace.package]
 version = "0.3.0"
 edition = "2024"
-rust-version = "1.86"
+rust-version = "1.85"
+license = "Apache-2.0"
+repository = "https://github.com/boundless-xyz/zeth"
 
-[profile.dev.build-override]
-opt-level = 3
+[workspace.lints.rust]
+unreachable_pub = "warn"
+unused_must_use = "deny"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "warn"
 
 [workspace.dependencies]
 # internal crates
