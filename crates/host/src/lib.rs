@@ -1,4 +1,4 @@
-// Copyright 2025 RISC Zero, Inc.
+// Copyright 2026 RISC Zero, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -60,7 +60,6 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
         let chain_spec = match chain {
             NamedChain::Mainnet => reth_chainspec::MAINNET.clone(),
             NamedChain::Sepolia => reth_chainspec::SEPOLIA.clone(),
-            NamedChain::Holesky => reth_chainspec::HOLESKY.clone(),
             NamedChain::Hoodi => reth_chainspec::HOODI.clone(),
             chain => bail!("unsupported chain: {chain}"),
         };
