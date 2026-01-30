@@ -14,10 +14,9 @@ OUTPUT_CSV="results.csv"
 # Write CSV header to the output file
 echo "block_number,execution_time,total_cycles,user_cycles,paging_cycles,keccak_calls,gas_used" > "$OUTPUT_CSV"
 
-# This function processes a single file: it extracts the block number,
-# runs the command, extracts metrics from its output, and finally echoes a CSV row.
-process_file() {
-  file="$1"
+# This function processes a single block: it runs the command, extracts metrics, and finally echoes a CSV row
+process_block() {
+  hash="$1"
 
   # The ETH_RPC_URL needs to be available in the sub-shell spawned by parallel
   ETH_RPC_URL="${ETH_RPC_URL:-"https://ethereum-rpc.publicnode.com"}"
@@ -31,12 +30,8 @@ process_file() {
     fi
   }
 
-  # Extract the number from the filename: remove up to '_' and the '.json' suffix
-  hash=${file#*_}
-  hash=${hash%.json}
-
   # Log progress (sent to stderr so it won’t pollute the CSV output)
-  echo "Processing file: $file with number: $hash" >&2
+ echo "Processing block: $hash" >&2
 
   # Run your command and capture both stdout and stderr
   output=$(
@@ -87,7 +82,12 @@ process_file() {
 }
 
 # Export the function so that GNU Parallel's sub-shells can access it.
-export -f process_file
+export -f process_block
 
-# Use GNU Parallel with the configurable job count to process each file concurrently.
-parallel --jobs "$JOBS" process_file ::: cache/input_0x*.json >> "$OUTPUT_CSV"
+# Use GNU Parallel with the configurable job count to process each unique hash concurrently.
+for file in cache/input_0x*.json; do
+  hash=${file#*_}
+  hash=${hash%.json}
+  hash=${hash%.v[0-9]}
+  echo "$hash"
+done | sort -u | parallel --jobs "$JOBS" process_block >> "$OUTPUT_CSV"

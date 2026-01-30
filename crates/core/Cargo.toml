@@ -3,6 +3,13 @@ name = "zeth-core"
 version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+[features]
+# Allow proving of pre-merge (Proof-of-Work) blocks.
+# This is considered unsafe because reth does not correctly validate all difficulty constraints.
+unsafe-pre-merge = []
 
 [dependencies]
 alloy-consensus = { workspace = true }
@@ -21,7 +28,5 @@ risc0-ethereum-trie = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }
 
-[features]
-# Allow proving of pre-merge (Proof-of-Work) blocks.
-# This is considered unsafe because reth does not correctly validate all difficulty constraints.
-unsafe-pre-merge = []
+[lints]
+workspace = true

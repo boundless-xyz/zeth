@@ -43,7 +43,7 @@ use std::{
 
 /// A simple revm [RevmDatabase] wrapper that records all DB queries.
 #[derive(Clone, Default)]
-pub struct PreflightDb<D> {
+pub(crate) struct PreflightDb<D> {
     accounts: AddressHashMap<B256HashSet>,
     contracts: B256HashMap<Bytes>,
     block_hash_numbers: HashSet<BlockNumber>,
@@ -222,7 +222,7 @@ impl<N: Network, P: Provider<N>> PreflightDb<ProviderDb<N, P>> {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum DbError {
+pub(crate) enum DbError {
     #[error("provider error")]
     Provider(#[from] provider::Error),
     #[error(transparent)]
