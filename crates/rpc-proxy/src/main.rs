@@ -22,7 +22,7 @@ use alloy::{
 use anyhow::{Context, bail};
 use clap::Parser;
 use reqwest::Client;
-use reth_chainspec::{HOLESKY, HOODI, MAINNET, NamedChain, SEPOLIA};
+use reth_chainspec::{HOODI, MAINNET, NamedChain, SEPOLIA};
 use reth_evm_ethereum::EthEvmConfig;
 use serde_json::{Value, json};
 use std::sync::Arc;
@@ -217,7 +217,6 @@ async fn main() -> anyhow::Result<()> {
     let chain: NamedChain = chain_id.try_into().context("Invalid chain_id")?;
     let evm_config = match chain {
         NamedChain::Mainnet => Arc::new(EthEvmConfig::ethereum(MAINNET.clone())),
-        NamedChain::Holesky => Arc::new(EthEvmConfig::ethereum(HOLESKY.clone())),
         NamedChain::Hoodi => Arc::new(EthEvmConfig::ethereum(HOODI.clone())),
         NamedChain::Sepolia => Arc::new(EthEvmConfig::ethereum(SEPOLIA.clone())),
         _ => bail!("Unsupported chain: {chain}"),

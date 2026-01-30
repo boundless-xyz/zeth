@@ -61,7 +61,7 @@ jobs:
 
     strategy:
       matrix:
-        guest: [ "mainnet", "sepolia", "holesky" ]
+        guest: [ "mainnet", "sepolia", "hoodi" ]
 
     steps:
       - name: Checkout
