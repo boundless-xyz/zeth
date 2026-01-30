@@ -210,6 +210,7 @@ impl<N: Network, P: Provider<N>> RevmDatabase for ProviderDb<N, P> {
             nonce,
             balance,
             code_hash,
+            account_id: None,
             code: None, // will be queried later using code_by_hash
         }))
     }

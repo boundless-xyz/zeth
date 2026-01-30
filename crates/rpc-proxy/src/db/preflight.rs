@@ -250,6 +250,7 @@ impl<N: Network, P: Provider<N>> RevmDatabase for PreflightDb<ProviderDb<N, P>> 
             balance: acc.balance,
             nonce: acc.nonce,
             code_hash: acc.code_hash,
+            account_id: None,
             code: None, // will be queried later using code_by_hash
         }))
     }
