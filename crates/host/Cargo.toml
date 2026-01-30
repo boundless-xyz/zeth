@@ -30,6 +30,8 @@ tracing-subscriber = { workspace = true }
 zeth-core = { workspace = true }
 
 [dev-dependencies]
+alloy = { workspace = true, features = ["node-bindings", "sol-types", "contract"] }
+reqwest = { workspace = true }
 serde_json = { workspace = true, features = ["raw_value"] }
 test-log = { workspace = true }
 

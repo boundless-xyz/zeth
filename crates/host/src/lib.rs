@@ -60,6 +60,7 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
             NamedChain::Mainnet => reth_chainspec::MAINNET.clone(),
             NamedChain::Sepolia => reth_chainspec::SEPOLIA.clone(),
             NamedChain::Hoodi => reth_chainspec::HOODI.clone(),
+            NamedChain::Dev => reth_chainspec::DEV.clone(),
             chain => bail!("unsupported chain: {chain}"),
         };
 
@@ -83,6 +84,8 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
             NamedChain::Mainnet => MAINNET_ELF,
             NamedChain::Sepolia => SEPOLIA_ELF,
             NamedChain::Hoodi => HOODI_ELF,
+            // Dev uses MAINNET_ELF since it's only used for dev mode testing
+            NamedChain::Dev => MAINNET_ELF,
             chain => bail!("unsupported chain for proving: {chain}"),
         };
         let image_id = compute_image_id(elf).context("failed to compute image id")?;
