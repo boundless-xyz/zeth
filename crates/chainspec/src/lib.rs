@@ -81,6 +81,17 @@ pub static HOODI: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     spec.into()
 });
 
+pub static DEV: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
+    let spec = ChainSpec {
+        chain: NamedChain::AnvilHardhat.into(),
+        forks: EthereumHardfork::devnet().into(),
+        deposit_contract_address: Some(Address::ZERO),
+        base_fee_params: BaseFeeParams::ethereum(),
+        blob_params: BlobScheduleBlobParams::default(),
+    };
+    spec.into()
+});
+
 #[derive(Clone, Debug)]
 pub struct ChainSpec {
     chain: Chain,
