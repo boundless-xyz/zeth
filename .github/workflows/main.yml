@@ -24,14 +24,7 @@ env:
 
 jobs:
   test:
-    runs-on: [ self-hosted, prod, "${{ matrix.os }}", "${{ matrix.arch }}", "${{ matrix.device }}" ]
-    strategy:
-      matrix:
-        include:
-          - os: Linux
-            arch: X64
-            feature: default
-            device: cpu
+    runs-on: [ self-hosted, prod, Linux, X64, cpu ]
     steps:
       - name: checkout code
         uses: actions/checkout@v4
@@ -42,7 +35,7 @@ jobs:
       - name: install sccache
         uses: boundless-xyz/boundless/.github/actions/sccache@main
         with:
-          key: ${{ matrix.os }}-${{ matrix.feature }}
+          key: Linux-default
 
       - name: install risc0
         uses: ./.github/actions/risc0-toolchain
@@ -54,44 +47,30 @@ jobs:
         env:
           RISC0_DEV_MODE: true
           RISC0_INFO: true
-        run: cargo test --locked 2>&1 | tee test-output.log
-
-      - name: Extract cycle metrics
-        id: cycles
         run: |
-          TOTAL=$(grep -oP '\d+(?= total cycles)' test-output.log || echo "0")
-          USER=$(grep -oP '\d+(?= user cycles)' test-output.log || echo "0")
-          echo "total=$TOTAL" >> $GITHUB_OUTPUT
-          echo '[{"name":"total_cycles","unit":"cycles","value":'$TOTAL'},{"name":"user_cycles","unit":"cycles","value":'$USER'}]' > benchmark-results.json
-          echo "Extracted metrics: total=$TOTAL, user=$USER, paging=$PAGING"
+          set -o pipefail
+          cargo test --locked 2>&1 | tee test-output.log
 
-      - name: Store benchmark result
+      - name: extract cycle metrics
+        run: .github/scripts/extract-cycle-metrics.sh test-output.log benchmark-results.json
+
+      - name: store benchmark result
         uses: risc0/github-action-benchmark@v1
         with:
           tool: 'customSmallerIsBetter'
           output-file-path: benchmark-results.json
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          # Store benchmark data in gh-pages branch
           auto-push: ${{ github.ref == 'refs/heads/main' }}
-          # Comment on PRs with comparison
           comment-on-alert: true
-          alert-threshold: '105%'
+          alert-threshold: '101%'
           fail-on-alert: true
-          # Compare against previous results
           comment-always: ${{ github.event_name == 'pull_request' }}
 
-      - name: Show sccache stats
+      - name: show sccache stats
         run: sccache --show-stats
 
   lint:
-    runs-on: [ self-hosted, prod, "${{ matrix.os }}", "${{ matrix.arch }}", "${{ matrix.device }}" ]
-    strategy:
-      matrix:
-        include:
-          - os: Linux
-            arch: X64
-            feature: default
-            device: cpu
+    runs-on: [ self-hosted, prod, Linux, X64, cpu ]
     steps:
       - name: checkout code
         uses: actions/checkout@v4
@@ -110,7 +89,7 @@ jobs:
       - name: install sccache
         uses: boundless-xyz/boundless/.github/actions/sccache@main
         with:
-          key: ${{ matrix.os }}-${{ matrix.feature }}
+          key: Linux-default
 
       - name: check formatting
         run: cargo fmt --all --check
@@ -124,5 +103,5 @@ jobs:
         working-directory: guests/stateless-client
         run: cargo fmt --all --check
 
-      - name: Show sccache stats
+      - name: show sccache stats
         run: sccache --show-stats
