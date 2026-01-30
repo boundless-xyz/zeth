@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769796389803,
+  "lastUpdate": 1769796632378,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -101,6 +101,50 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/boundless-xyz/zeth/commit/6a3714d199203d638d046e2d8570c016d830e60d"
         },
         "date": 1769796388959,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 888274944,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 728227295,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 10504980,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 717690435,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "06e0f422b59dd46cec670960434e13035bd93c85",
+          "message": "build(deps): bump reqwest from 0.12.28 to 0.13.1 (#203)\n\nBumps [reqwest](https://github.com/seanmonstar/reqwest) from 0.12.28 to 0.13.1.\n- [Release notes](https://github.com/seanmonstar/reqwest/releases)\n- [Changelog](https://github.com/seanmonstar/reqwest/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/seanmonstar/reqwest/compare/v0.12.28...v0.13.1)\n\n---\nupdated-dependencies:\n- dependency-name: reqwest\n  dependency-version: 0.13.1\n  dependency-type: direct:production\n  update-type: version-update:semver-minor\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2026-01-30T19:09:01+01:00",
+          "tree_id": "d1d4d9729e04610e1687f61c29fb3a8640cde9ba",
+          "url": "https://github.com/boundless-xyz/zeth/commit/06e0f422b59dd46cec670960434e13035bd93c85"
+        },
+        "date": 1769796631631,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
