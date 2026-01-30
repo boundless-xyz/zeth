@@ -87,26 +87,26 @@ impl<T: alloy_rlp::Decodable + alloy_rlp::Encodable> RlpTrie<T> {
         Self { inner, phantom: PhantomData }
     }
 
-    pub fn from_prehashed(
+    fn from_prehashed(
         root: B256,
         rlp_by_digest: &B256Map<impl AsRef<[u8]>>,
     ) -> alloy_rlp::Result<Self> {
         Ok(Self::new(CachedTrie::from_prehashed_nodes(root, rlp_by_digest)?))
     }
 
-    pub fn get(&self, key: impl AsRef<[u8]>) -> alloy_rlp::Result<Option<T>> {
+    fn get(&self, key: impl AsRef<[u8]>) -> alloy_rlp::Result<Option<T>> {
         self.inner.get(key).map(alloy_rlp::decode_exact).transpose()
     }
 
-    pub fn insert(&mut self, key: impl AsRef<[u8]>, value: T) {
+    fn insert(&mut self, key: impl AsRef<[u8]>, value: T) {
         self.inner.insert(key, alloy_rlp::encode(value));
     }
 
-    pub fn remove(&mut self, key: impl AsRef<[u8]>) -> bool {
+    fn remove(&mut self, key: impl AsRef<[u8]>) -> bool {
         self.inner.remove(key)
     }
 
-    pub fn hash(&mut self) -> B256 {
+    fn hash(&mut self) -> B256 {
         self.inner.hash()
     }
 }

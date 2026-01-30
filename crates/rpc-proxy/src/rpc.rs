@@ -27,7 +27,7 @@ use tracing::trace;
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct StorageRangeQueryResponse {
+struct StorageRangeQueryResponse {
     pub storage: HashMap<B256, StorageRangeQueryResponseEntry>,
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub next_key: Option<B256>,
@@ -35,14 +35,14 @@ pub struct StorageRangeQueryResponse {
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct StorageRangeQueryResponseEntry {
+struct StorageRangeQueryResponseEntry {
     pub key: Option<JsonStorageKey>,
     pub value: U256,
 }
 
 /// An extension trait for Alloy providers that adds custom debug RPC methods.
 #[async_trait]
-pub trait DebugApi<N: Network>: Provider<N> {
+pub(crate) trait DebugApi<N: Network>: Provider<N> {
     /// Fetches the next storage key for an address using `debug_storageRangeAt`.
     async fn get_next_storage_key(
         &self,
