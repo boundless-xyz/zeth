@@ -54,7 +54,9 @@ jobs:
         env:
           RISC0_DEV_MODE: true
           RISC0_INFO: true
-        run: cargo test --locked 2>&1 | tee test-output.log
+        run: |
+          set -o pipefail
+          cargo test --locked 2>&1 | tee test-output.log
 
       - name: Extract cycle metrics
         id: cycles
