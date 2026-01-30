@@ -12,20 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloy_consensus::Header;
 use alloy_eips::{
     BlobScheduleBlobParams,
-    eip1559::BaseFeeParams,
     eip2124::{ForkFilter, ForkId, Head},
     eip7840::BlobParams,
 };
-use alloy_evm::eth::spec::EthExecutorSpec;
 use alloy_genesis::Genesis;
-use alloy_hardforks::{
+use alloy_primitives::{Address, B256, U256, address};
+use reth_chainspec::{BaseFeeParams, Chain, DepositContract, EthChainSpec, Hardforks, NamedChain};
+use reth_ethereum_forks::{
     EthereumHardfork, EthereumHardforks, ForkCondition, Hardfork, hoodi, mainnet, sepolia,
 };
-use alloy_primitives::{Address, B256, U256, address};
-use reth_chainspec::{Chain, DepositContract, EthChainSpec, Hardforks, NamedChain};
+use reth_evm::eth::spec::EthExecutorSpec;
+use reth_primitives_traits::Header;
 use std::{
     any::Any,
     collections::BTreeMap,

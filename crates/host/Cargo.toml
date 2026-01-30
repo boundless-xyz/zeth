@@ -10,8 +10,7 @@ repository = { workspace = true }
 unsafe-pre-merge = ["guests/unsafe-pre-merge", "zeth-core/unsafe-pre-merge"]
 
 [dependencies]
-alloy = { workspace = true }
-alloy-chains = { workspace = true }
+alloy = { workspace = true, features = ["provider-debug-api"] }
 anyhow = { workspace = true }
 blst = { workspace = true }
 bytemuck = { workspace = true }

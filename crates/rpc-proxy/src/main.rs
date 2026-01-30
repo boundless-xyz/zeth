@@ -19,11 +19,10 @@ use alloy::{
     rpc::client::RpcClient,
     transports::layers::RetryBackoffLayer,
 };
-use alloy_chains::NamedChain;
 use anyhow::{Context, bail};
 use clap::Parser;
 use reqwest::Client;
-use reth_chainspec::{HOODI, MAINNET, SEPOLIA};
+use reth_chainspec::{HOODI, MAINNET, NamedChain, SEPOLIA};
 use reth_evm_ethereum::EthEvmConfig;
 use serde_json::{Value, json};
 use std::sync::Arc;

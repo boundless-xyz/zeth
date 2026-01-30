@@ -27,15 +27,15 @@ use alloy_primitives::{
         AddressHashMap, AddressMap, B256HashMap, B256HashSet, B256Map, HashMap, HashSet, hash_map,
     },
 };
-use alloy_trie::{EMPTY_ROOT_HASH, TrieAccount as StateAccount};
 use anyhow::{Context, Result, ensure};
 use itertools::Itertools;
-use revm::{
+use reth_revm::revm::{
     Database as RevmDatabase,
     context::DBErrorMarker,
     state::{AccountInfo, Bytecode},
 };
-use risc0_ethereum_trie::{Trie as MerkleTrie, Trie};
+use reth_trie_common::{EMPTY_ROOT_HASH, TrieAccount as StateAccount};
+use risc0_ethereum_trie::Trie;
 use std::{
     fmt::{self, Debug},
     hash::{BuildHasher, Hash},
@@ -159,7 +159,7 @@ impl<N: Network, P: Provider<N>> PreflightDb<ProviderDb<N, P>> {
 
     /// Returns the merkle proofs (sparse [MerkleTrie]) for the state and all storage queries
     /// recorded by the [RevmDatabase].
-    pub(crate) async fn state_proof(&mut self) -> Result<(MerkleTrie, AddressMap<MerkleTrie>)> {
+    pub(crate) async fn state_proof(&mut self) -> Result<(Trie, AddressMap<Trie>)> {
         // if no accounts were accessed, use the state root of the corresponding block as is
         if self.accounts.is_empty() {
             let hash = self.inner.block();
@@ -171,10 +171,7 @@ impl<N: Network, P: Provider<N>> PreflightDb<ProviderDb<N, P>> {
                 .context("eth_getBlockByHash failed")?
                 .with_context(|| format!("block {hash} not found"))?;
 
-            return Ok((
-                MerkleTrie::from_digest(block.header().state_root()),
-                AddressMap::default(),
-            ));
+            return Ok((Trie::from_digest(block.header().state_root()), AddressMap::default()));
         }
 
         let proofs = &mut self.proofs;
@@ -190,16 +187,16 @@ impl<N: Network, P: Provider<N>> PreflightDb<ProviderDb<N, P>> {
             .keys()
             .filter_map(|address| proofs.get(address))
             .flat_map(|proof| proof.account_proof.iter());
-        let state_trie = MerkleTrie::from_rlp(state_nodes).context("accountProof invalid")?;
+        let state_trie = Trie::from_rlp(state_nodes).context("accountProof invalid")?;
 
-        let mut storage_tries: AddressMap<MerkleTrie> = AddressMap::default();
+        let mut storage_tries: AddressMap<Trie> = AddressMap::default();
         for (address, storage_keys) in &self.accounts {
             // safe unwrap: added a proof for each account in the previous loop
             let proof = proofs.get(address).unwrap();
 
             // create a new trie for this root
             let storage_root = proof.account.map(|a| a.storage_root).unwrap_or(EMPTY_ROOT_HASH);
-            let mut storage_trie = MerkleTrie::from_digest(storage_root);
+            let mut storage_trie = Trie::from_digest(storage_root);
 
             // hydrate the trie if storage slots were accessed
             if !storage_keys.is_empty() {
@@ -253,6 +250,7 @@ impl<N: Network, P: Provider<N>> RevmDatabase for PreflightDb<ProviderDb<N, P>> 
             balance: acc.balance,
             nonce: acc.nonce,
             code_hash: acc.code_hash,
+            account_id: None,
             code: None, // will be queried later using code_by_hash
         }))
     }

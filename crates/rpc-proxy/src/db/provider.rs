@@ -19,9 +19,9 @@ use alloy::{
     transports::TransportError,
 };
 use alloy_primitives::{Address, B256, BlockHash, StorageKey, U256, map::B256HashMap};
-use revm::{
+use reth_revm::{
     Database as RevmDatabase,
-    database::DBErrorMarker,
+    db::DBErrorMarker,
     primitives::KECCAK_EMPTY,
     state::{AccountInfo, Bytecode},
 };
@@ -210,6 +210,7 @@ impl<N: Network, P: Provider<N>> RevmDatabase for ProviderDb<N, P> {
             nonce,
             balance,
             code_hash,
+            account_id: None,
             code: None, // will be queried later using code_by_hash
         }))
     }
