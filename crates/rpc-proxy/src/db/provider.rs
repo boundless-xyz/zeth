@@ -31,7 +31,7 @@ use tracing::trace;
 
 /// Errors returned by the [ProviderDb].
 #[derive(Debug, thiserror::Error)]
-pub enum Error {
+pub(crate) enum Error {
     #[error("{0} failed")]
     Rpc(&'static str, #[source] TransportError),
     #[error("block not found")]
@@ -50,7 +50,7 @@ impl DBErrorMarker for Error {}
 /// immediate context is only synchronous, but a transitive caller is async, use
 /// [tokio::task::spawn_blocking] around the calls that need to be blocked.
 #[derive(Clone)]
-pub struct ProviderDb<N: Network, P: Provider<N>> {
+pub(crate) struct ProviderDb<N: Network, P: Provider<N>> {
     /// Provider to fetch the data from.
     provider: P,
     /// Configuration of the provider.
