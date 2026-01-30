@@ -1,4 +1,4 @@
-// Copyright 2025 RISC Zero, Inc.
+// Copyright 2026 RISC Zero, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -43,7 +43,7 @@ use std::{
 
 /// A simple revm [RevmDatabase] wrapper that records all DB queries.
 #[derive(Clone, Default)]
-pub struct PreflightDb<D> {
+pub(crate) struct PreflightDb<D> {
     accounts: AddressHashMap<B256HashSet>,
     contracts: B256HashMap<Bytes>,
     block_hash_numbers: HashSet<BlockNumber>,
@@ -222,7 +222,7 @@ impl<N: Network, P: Provider<N>> PreflightDb<ProviderDb<N, P>> {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum DbError {
+pub(crate) enum DbError {
     #[error("provider error")]
     Provider(#[from] provider::Error),
     #[error(transparent)]

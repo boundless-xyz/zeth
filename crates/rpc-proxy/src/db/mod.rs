@@ -1,4 +1,4 @@
-// Copyright 2025 RISC Zero, Inc.
+// Copyright 2026 RISC Zero, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,5 @@
 mod preflight;
 pub(crate) mod provider;
 
-pub use preflight::PreflightDb;
-pub(crate) use provider::ProviderConfig;
-pub use provider::ProviderDb;
+pub(crate) use preflight::PreflightDb;
+pub(crate) use provider::{ProviderConfig, ProviderDb};
