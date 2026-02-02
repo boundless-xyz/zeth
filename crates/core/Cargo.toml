@@ -10,10 +10,13 @@ repository = { workspace = true }
 # Allow proving of pre-merge (Proof-of-Work) blocks.
 # This is considered unsafe because reth does not correctly validate all difficulty constraints.
 unsafe-pre-merge = []
+# Enable R0VM optimized implementation for precompiles
+r0vm = ["dep:risc0-bigint2"]
 
 [dependencies]
 alloy-primitives = { workspace = true, features = ["map"] }
 alloy-rlp = { workspace = true }
+num-bigint = { workspace = true }
 reth-chainspec = { workspace = true }
 reth-errors = { workspace = true }
 reth-ethereum-primitives = { workspace = true }
@@ -22,6 +25,7 @@ reth-evm-ethereum = { workspace = true }
 reth-primitives-traits = { workspace = true }
 reth-stateless = { workspace = true }
 reth-trie-common = { workspace = true }
+risc0-bigint2 = { workspace = true, optional = true }
 risc0-ethereum-trie = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }

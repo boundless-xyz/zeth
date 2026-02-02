@@ -12,6 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#[cfg(feature = "r0vm")]
+mod crypto;
+
 use alloy_primitives::{Address, B256, Bytes, KECCAK256_EMPTY, U256, keccak256, map::B256Map};
 use reth_chainspec::{EthChainSpec, Hardforks};
 use reth_errors::ProviderError;
@@ -23,6 +26,8 @@ use reth_trie_common::{EMPTY_ROOT_HASH, HashedPostState, TrieAccount};
 use risc0_ethereum_trie::CachedTrie;
 use std::{cell::RefCell, collections::hash_map::Entry, fmt::Debug, marker::PhantomData};
 
+#[cfg(feature = "r0vm")]
+pub use crypto::{R0vmCrypto, install_r0vm_crypto};
 pub use reth_stateless::{ExecutionWitness, StatelessTrie, UncompressedPublicKey};
 
 pub type EthEvmConfig<C> = reth_evm_ethereum::EthEvmConfig<C, EthEvmFactory>;
@@ -65,6 +70,9 @@ where
         reth_chainspec::EthereumHardforks::is_paris_active_at_block(&chain_spec, block.number),
         "only post-merge blocks supported"
     );
+
+    //#[cfg(all(feature = "r0vm", target_os = "zkvm", target_vendor = "risc0"))]
+    //assert!(install_r0vm_crypto());
 
     let (hash, _) = reth_stateless::stateless_validation_with_trie::<SparseState, _, _>(
         block, signers, witness, chain_spec, config,

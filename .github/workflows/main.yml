@@ -49,7 +49,7 @@ jobs:
           RISC0_INFO: true
         run: |
           set -o pipefail
-          cargo test --locked 2>&1 | tee test-output.log
+          cargo test --all-features --locked 2>&1 | tee test-output.log
 
       - name: extract cycle metrics
         run: .github/scripts/extract-cycle-metrics.sh test-output.log benchmark-results.json
