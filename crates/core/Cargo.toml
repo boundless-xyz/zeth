@@ -11,12 +11,12 @@ repository = { workspace = true }
 # This is considered unsafe because reth does not correctly validate all difficulty constraints.
 unsafe-pre-merge = []
 # Enable R0VM optimized implementation for precompiles
-r0vm = ["dep:risc0-bigint2"]
+r0vm = ["dep:num-bigint", "dep:risc0-bigint2"]
 
 [dependencies]
 alloy-primitives = { workspace = true, features = ["map"] }
 alloy-rlp = { workspace = true }
-num-bigint = { workspace = true }
+num-bigint = { workspace = true, optional = true }
 reth-chainspec = { workspace = true }
 reth-errors = { workspace = true }
 reth-ethereum-primitives = { workspace = true }
