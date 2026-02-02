@@ -45,7 +45,8 @@ jobs:
       - name: run tests
         env:
           RISC0_DEV_MODE: true
-        run: cargo test --all-features --locked
+        # Run all tests BUT skip the e2e tests (handled in benchmark job)
+        run: cargo test --all-features --locked -- --skip e2e
 
       - name: show sccache stats
         run: sccache --show-stats
