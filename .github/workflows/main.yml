@@ -12,7 +12,8 @@ concurrency:
 # this is needed to gain access via OIDC to the S3 bucket for caching
 permissions:
   id-token: write
-  contents: read
+  contents: write  # needed for gh-pages benchmark data
+  pull-requests: write  # needed for PR comments
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -23,14 +24,7 @@ env:
 
 jobs:
   test:
-    runs-on: [ self-hosted, prod, "${{ matrix.os }}", "${{ matrix.arch }}", "${{ matrix.device }}" ]
-    strategy:
-      matrix:
-        include:
-          - os: Linux
-            arch: X64
-            feature: default
-            device: cpu
+    runs-on: [ self-hosted, prod, Linux, X64, cpu ]
     steps:
       - name: checkout code
         uses: actions/checkout@v4
@@ -41,7 +35,7 @@ jobs:
       - name: install sccache
         uses: boundless-xyz/boundless/.github/actions/sccache@main
         with:
-          key: ${{ matrix.os }}-${{ matrix.feature }}
+          key: Linux-default
 
       - name: install risc0
         uses: ./.github/actions/risc0-toolchain
@@ -52,20 +46,31 @@ jobs:
       - name: run tests
         env:
           RISC0_DEV_MODE: true
-        run: cargo test --locked --all-features
+          RISC0_INFO: true
+        run: |
+          set -o pipefail
+          cargo test --all-features --locked 2>&1 | tee test-output.log
 
-      - name: Show sccache stats
+      - name: extract cycle metrics
+        run: .github/scripts/extract-cycle-metrics.sh test-output.log benchmark-results.json
+
+      - name: store benchmark result
+        uses: risc0/github-action-benchmark@v1
+        with:
+          tool: 'customSmallerIsBetter'
+          output-file-path: benchmark-results.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: ${{ github.ref == 'refs/heads/main' }}
+          comment-on-alert: true
+          alert-threshold: '101%'
+          fail-on-alert: true
+          comment-always: ${{ github.event_name == 'pull_request' }}
+
+      - name: show sccache stats
         run: sccache --show-stats
 
   lint:
-    runs-on: [ self-hosted, prod, "${{ matrix.os }}", "${{ matrix.arch }}", "${{ matrix.device }}" ]
-    strategy:
-      matrix:
-        include:
-          - os: Linux
-            arch: X64
-            feature: default
-            device: cpu
+    runs-on: [ self-hosted, prod, Linux, X64, cpu ]
     steps:
       - name: checkout code
         uses: actions/checkout@v4
@@ -84,7 +89,7 @@ jobs:
       - name: install sccache
         uses: boundless-xyz/boundless/.github/actions/sccache@main
         with:
-          key: ${{ matrix.os }}-${{ matrix.feature }}
+          key: Linux-default
 
       - name: check formatting
         run: cargo fmt --all --check
@@ -98,5 +103,5 @@ jobs:
         working-directory: guests/stateless-client
         run: cargo fmt --all --check
 
-      - name: Show sccache stats
+      - name: show sccache stats
         run: sccache --show-stats

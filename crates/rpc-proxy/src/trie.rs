@@ -1,4 +1,4 @@
-// Copyright 2025 RISC Zero, Inc.
+// Copyright 2026 RISC Zero, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@ use alloy::{
     providers::Provider,
 };
 use anyhow::{Context, Result, bail};
-use revm::database::StorageWithOriginalValues;
+use reth_revm::db::StorageWithOriginalValues;
 use risc0_ethereum_trie::{Nibbles, Trie, orphan};
 use std::collections::HashSet;
 use tracing::{debug, trace};

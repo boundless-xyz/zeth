@@ -1,4 +1,4 @@
-// Copyright 2025 RISC Zero, Inc.
+// Copyright 2026 RISC Zero, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,9 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use zeth_chainspec::HOLESKY;
+use zeth_chainspec::HOODI;
 use zeth_core::EthEvmConfig;
 
 pub fn main() {
-    stateless_client::entry(EthEvmConfig::new(HOLESKY.clone()));
+    stateless_client::entry(EthEvmConfig::new(HOODI.clone()));
 }

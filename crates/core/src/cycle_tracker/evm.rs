@@ -111,7 +111,7 @@ struct CycleTrackerBlockExecutor<F, DB> {
 }
 
 impl<F, DB: Database> CycleTrackerBlockExecutor<F, DB> {
-    pub fn new(factory: F, db: DB) -> Self {
+    pub(crate) fn new(factory: F, db: DB) -> Self {
         let db =
             State::builder().with_database(db).with_bundle_update().without_state_clear().build();
         Self { factory, db }
@@ -228,7 +228,7 @@ impl<CTX: ContextTr> Inspector<CTX> for CycleTrackerInspector<'_> {
                 let gas_limit = match frame {
                     FrameInput::Empty => 0,
                     FrameInput::Call(input) => input.gas_limit,
-                    FrameInput::Create(input) => input.gas_limit,
+                    FrameInput::Create(input) => input.gas_limit(),
                 };
                 gas -= gas_limit;
             }

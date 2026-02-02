@@ -1,4 +1,4 @@
-// Copyright 2025 RISC Zero, Inc.
+// Copyright 2026 RISC Zero, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,20 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use alloy_consensus::Header;
 use alloy_eips::{
     BlobScheduleBlobParams,
-    eip1559::BaseFeeParams,
     eip2124::{ForkFilter, ForkId, Head},
     eip7840::BlobParams,
 };
-use alloy_evm::eth::spec::EthExecutorSpec;
 use alloy_genesis::Genesis;
-use alloy_hardforks::{
-    EthereumHardfork, EthereumHardforks, ForkCondition, Hardfork, holesky, mainnet, sepolia,
-};
 use alloy_primitives::{Address, B256, U256, address};
-use reth_chainspec::{Chain, DepositContract, EthChainSpec, Hardforks, NamedChain};
+use reth_chainspec::{BaseFeeParams, Chain, DepositContract, EthChainSpec, Hardforks, NamedChain};
+use reth_ethereum_forks::{
+    EthereumHardfork, EthereumHardforks, ForkCondition, Hardfork, hoodi, mainnet, sepolia,
+};
+use reth_evm::eth::spec::EthExecutorSpec;
+use reth_primitives_traits::Header;
 use std::{
     any::Any,
     collections::BTreeMap,
@@ -37,8 +36,8 @@ const MAINNET_DEPOSIT_CONTRACT_ADDRESS: Address =
     address!("0x00000000219ab540356cbb839cbe05303d7705fa");
 const SEPOLIA_DEPOSIT_CONTRACT_ADDRESS: Address =
     address!("0x7f02c3e3c98b133055b8b348b2ac625669ed295d");
-const HOLESKY_DEPOSIT_CONTRACT_ADDRESS: Address =
-    address!("0x4242424242424242424242424242424242424242");
+const HOODI_DEPOSIT_CONTRACT_ADDRESS: Address =
+    address!("0x00000000219ab540356cBB839Cbe05303d7705Fa");
 
 pub static MAINNET: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let spec = ChainSpec {
@@ -68,15 +67,15 @@ pub static SEPOLIA: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     spec.into()
 });
 
-pub static HOLESKY: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
+pub static HOODI: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let spec = ChainSpec {
-        chain: NamedChain::Holesky.into(),
-        forks: EthereumHardfork::holesky().into(),
-        deposit_contract_address: Some(HOLESKY_DEPOSIT_CONTRACT_ADDRESS),
+        chain: NamedChain::Hoodi.into(),
+        forks: EthereumHardfork::hoodi().into(),
+        deposit_contract_address: Some(HOODI_DEPOSIT_CONTRACT_ADDRESS),
         base_fee_params: BaseFeeParams::ethereum(),
         blob_params: BlobScheduleBlobParams::default().with_scheduled([
-            (holesky::HOLESKY_BPO1_TIMESTAMP, BlobParams::bpo1()),
-            (holesky::HOLESKY_BPO2_TIMESTAMP, BlobParams::bpo2()),
+            (hoodi::HOODI_BPO1_TIMESTAMP, BlobParams::bpo1()),
+            (hoodi::HOODI_BPO2_TIMESTAMP, BlobParams::bpo2()),
         ]),
     };
     spec.into()
@@ -202,15 +201,17 @@ impl EthChainSpec for ChainSpec {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use reth_chainspec::BaseFeeParamsKind;
 
     fn assert_eq(spec: &ChainSpec, reth_spec: &reth_chainspec::ChainSpec) {
         assert_eq!(spec.chain, reth_spec.chain);
-        assert_eq!(spec.blob_params, reth_spec.blob_params);
         assert_eq!(
             spec.forks.values().cloned().collect::<Vec<_>>(),
             reth_spec.forks_iter().map(|(_, f)| f).collect::<Vec<_>>(),
         );
-        assert_eq!(spec.deposit_contract_address, reth_spec.deposit_contract.map(|c| c.address),);
+        assert_eq!(spec.deposit_contract_address, reth_spec.deposit_contract.map(|c| c.address));
+        assert_eq!(BaseFeeParamsKind::Constant(spec.base_fee_params), reth_spec.base_fee_params);
+        assert_eq!(spec.blob_params, reth_spec.blob_params);
     }
 
     #[test]
@@ -224,7 +225,7 @@ mod tests {
     }
 
     #[test]
-    fn holesky() {
-        assert_eq(&HOLESKY, &reth_chainspec::HOLESKY);
+    fn hoodi() {
+        assert_eq(&HOODI, &reth_chainspec::HOODI);
     }
 }

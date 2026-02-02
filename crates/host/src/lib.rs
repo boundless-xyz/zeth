@@ -1,4 +1,4 @@
-// Copyright 2025 RISC Zero, Inc.
+// Copyright 2026 RISC Zero, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,10 +18,9 @@ use alloy::{
     providers::{Provider, ext::DebugApi},
     rpc::types::debug::ExecutionWitness,
 };
-use alloy_chains::NamedChain;
 use anyhow::{Context, Result, bail};
-use guests::{HOLESKY_ELF, MAINNET_ELF, SEPOLIA_ELF};
-use reth_chainspec::{ChainSpec, EthChainSpec};
+use guests::{HOODI_ELF, MAINNET_ELF, SEPOLIA_ELF};
+use reth_chainspec::{ChainSpec, EthChainSpec, NamedChain};
 use reth_ethereum_primitives::{Block, TransactionSigned};
 use reth_stateless::UncompressedPublicKey;
 use risc0_zkvm::{
@@ -62,7 +61,6 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
         let chain_spec = match chain {
             NamedChain::Mainnet => reth_chainspec::MAINNET.clone(),
             NamedChain::Sepolia => reth_chainspec::SEPOLIA.clone(),
-            NamedChain::Holesky => reth_chainspec::HOLESKY.clone(),
             NamedChain::Hoodi => reth_chainspec::HOODI.clone(),
             chain => bail!("unsupported chain: {chain}"),
         };
@@ -86,7 +84,7 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
         let elf = match self.chain() {
             NamedChain::Mainnet => MAINNET_ELF,
             NamedChain::Sepolia => SEPOLIA_ELF,
-            NamedChain::Holesky => HOLESKY_ELF,
+            NamedChain::Hoodi => HOODI_ELF,
             chain => bail!("unsupported chain for proving: {chain}"),
         };
         let image_id = compute_image_id(elf).context("failed to compute image id")?;

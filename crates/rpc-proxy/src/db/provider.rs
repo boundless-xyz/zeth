@@ -1,4 +1,4 @@
-// Copyright 2025 RISC Zero, Inc.
+// Copyright 2026 RISC Zero, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ use alloy::{
     transports::TransportError,
 };
 use alloy_primitives::{Address, B256, BlockHash, StorageKey, U256, map::B256HashMap};
-use revm::{
+use reth_revm::{
     Database as RevmDatabase,
-    database::DBErrorMarker,
+    db::DBErrorMarker,
     primitives::KECCAK_EMPTY,
     state::{AccountInfo, Bytecode},
 };
@@ -31,7 +31,7 @@ use tracing::trace;
 
 /// Errors returned by the [ProviderDb].
 #[derive(Debug, thiserror::Error)]
-pub enum Error {
+pub(crate) enum Error {
     #[error("{0} failed")]
     Rpc(&'static str, #[source] TransportError),
     #[error("block not found")]
@@ -50,7 +50,7 @@ impl DBErrorMarker for Error {}
 /// immediate context is only synchronous, but a transitive caller is async, use
 /// [tokio::task::spawn_blocking] around the calls that need to be blocked.
 #[derive(Clone)]
-pub struct ProviderDb<N: Network, P: Provider<N>> {
+pub(crate) struct ProviderDb<N: Network, P: Provider<N>> {
     /// Provider to fetch the data from.
     provider: P,
     /// Configuration of the provider.
@@ -210,6 +210,7 @@ impl<N: Network, P: Provider<N>> RevmDatabase for ProviderDb<N, P> {
             nonce,
             balance,
             code_hash,
+            account_id: None,
             code: None, // will be queried later using code_by_hash
         }))
     }

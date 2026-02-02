@@ -21,10 +21,10 @@ mod platform {
     use crate::cycle_tracker::types;
     use risc0_zkvm::guest::env::{FdWriter, Write};
 
-    pub use risc0_zkvm::guest::env::cycle_count;
+    pub(super) use risc0_zkvm::guest::env::cycle_count;
 
     #[inline(always)]
-    pub fn write_slice(buf: &[u8]) {
+    pub(super) fn write_slice(buf: &[u8]) {
         FdWriter::new(types::CYCLE_TRACKER_FD, |_| {}).write_slice(buf);
     }
 }
@@ -32,11 +32,11 @@ mod platform {
 #[cfg(not(target_os = "zkvm"))]
 mod platform {
     /// Returns 0 to prevent panics when instrumented code runs on the host.
-    pub fn cycle_count() -> u64 {
+    pub(super) fn cycle_count() -> u64 {
         0
     }
     /// No-op on the host; trace data is discarded.
-    pub fn write_slice(_: &[u8]) {}
+    pub(super) fn write_slice(_: &[u8]) {}
 }
 
 /// Guest-side tracer for recording cycle counts.

@@ -3,10 +3,15 @@ name = "zeth-host"
 version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+
+[features]
+cycle-tracker = ["flate2", "guests/cycle-tracker", "zeth-core/cycle-tracker"]
+unsafe-pre-merge = ["guests/unsafe-pre-merge", "zeth-core/unsafe-pre-merge"]
 
 [dependencies]
-alloy = { workspace = true }
-alloy-chains = { workspace = true }
+alloy = { workspace = true, features = ["provider-debug-api"] }
 anyhow = { workspace = true }
 blst = { workspace = true }
 bytemuck = { workspace = true }
@@ -30,7 +35,3 @@ zeth-core = { workspace = true }
 [dev-dependencies]
 serde_json = { workspace = true, features = ["raw_value"] }
 test-log = { workspace = true }
-
-[features]
-cycle-tracker = ["flate2", "guests/cycle-tracker", "zeth-core/cycle-tracker"]
-unsafe-pre-merge = ["guests/unsafe-pre-merge", "zeth-core/unsafe-pre-merge"]

@@ -3,9 +3,8 @@ name = "guests"
 version = { workspace = true }
 edition = { workspace = true }
 rust-version = { workspace = true }
-
-[build-dependencies]
-risc0-build = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
 
 [package.metadata.risc0]
 methods = ["stateless-client"]
@@ -13,3 +12,9 @@ methods = ["stateless-client"]
 [features]
 cycle-tracker = []
 unsafe-pre-merge = []
+
+[build-dependencies]
+risc0-build = { workspace = true }
+
+[lints]
+workspace = true
