@@ -71,8 +71,8 @@ where
         "only post-merge blocks supported"
     );
 
-    //#[cfg(all(feature = "r0vm", target_os = "zkvm", target_vendor = "risc0"))]
-    //assert!(install_r0vm_crypto());
+    #[cfg(all(feature = "r0vm", target_os = "zkvm", target_vendor = "risc0"))]
+    assert!(install_r0vm_crypto());
 
     let (hash, _) = reth_stateless::stateless_validation_with_trie::<SparseState, _, _>(
         block, signers, witness, chain_spec, config,
