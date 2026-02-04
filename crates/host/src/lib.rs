@@ -160,6 +160,31 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
         Ok((info.receipt, image_id))
     }
 
+    /// Gets the input from the filesystem cache, or returns None.
+    /// Handles migration from legacy formats automatically.
+    pub async fn get_input_cached(
+        &self,
+        block_hash: B256,
+        cache_dir: &Path,
+    ) -> Result<Option<Input>> {
+        // 1. Try current version
+        if let Some(input) = Current.load_from_dir(block_hash, cache_dir)? {
+            return Ok(Some(input));
+        }
+        // 2. Try legacy versions
+        for format in LEGACY_FORMATS {
+            if let Some(input) = format.load_from_dir(block_hash, cache_dir)? {
+                // Migration: Save as current version
+                if let Err(err) = self.save_to_cache(&input, cache_dir) {
+                    tracing::warn!("Failed to save migrated cache: {}", err);
+                }
+
+                return Ok(Some(input));
+            }
+        }
+        Ok(None)
+    }
+
     /// Fetches input, using the filesystem cache if available.
     /// Handles migration from legacy formats automatically.
     pub async fn get_input_with_cache(&self, block_id: BlockId, cache_dir: &Path) -> Result<Input> {
@@ -178,20 +203,8 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
             }
         };
 
-        // 1. Try current version
-        if let Some(input) = Current.load_from_dir(block_hash, cache_dir)? {
+        if let Some(input) = self.get_input_cached(block_hash, cache_dir).await? {
             return Ok(input);
-        }
-        // 2. Try legacy versions
-        for format in LEGACY_FORMATS {
-            if let Some(input) = format.load_from_dir(block_hash, cache_dir)? {
-                // Migration: Save as current version
-                if let Err(err) = self.save_to_cache(&input, cache_dir) {
-                    tracing::warn!("Failed to save migrated cache: {}", err);
-                }
-
-                return Ok(input);
-            }
         }
 
         tracing::info!("Cache miss for block {block_hash}. Fetching from RPC.");
