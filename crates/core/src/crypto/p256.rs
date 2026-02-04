@@ -16,7 +16,7 @@
 //!
 //! Implements [EIP-7212](https://eips.ethereum.org/EIPS/eip-7212).
 
-use super::{be_bytes_to_limbs, is_less, modadd_256, modinv_256, modmul_256, unchecked};
+use super::{be_bytes_to_limbs, is_less, modadd_256, modmul_256, unchecked};
 use risc0_bigint2::ec::{AffinePoint, Curve, EC_256_WIDTH_WORDS, WeierstrassCurve};
 
 /// Number of 32-bit limbs for 256-bit values.
@@ -106,7 +106,7 @@ pub(super) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64
     if !is_less(&qx, &Secp256r1::PRIME) || !is_less(&qy, &Secp256r1::PRIME) {
         return false;
     }
-    // Validate: (qx, qy) satisfy the curve equation; this implies (qx, qy) != (0, 0)
+    // Validate: (qx, qy) satisfies the curve equation; this implies (qx, qy) != (0, 0)
     if !Secp256r1::satisfies_curve_equation(&qx, &qy) {
         return false;
     }
@@ -115,7 +115,7 @@ pub(super) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64
 
     // s_inv = s^(-1) (mod n)
     let mut s_inv = [0u32; N_LIMBS_256];
-    modinv_256(&s, &Secp256r1::N, &mut s_inv);
+    unchecked::modinv_256(&s, &Secp256r1::N, &mut s_inv);
 
     let mut t = [0u32; N_LIMBS_256];
 
@@ -123,12 +123,12 @@ pub(super) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64
     // R' = [h * s_inv]G + [r * s_inv]Q
     let r_prime_pt = {
         // t <- h * s_inv (mod n)
-        unchecked::modmul_256(&h, &s_inv, &Secp256r1::N, &mut t);
+        modmul_256(&h, &s_inv, &Secp256r1::N, &mut t);
         // u₁G <- [h * s_inv]G
         let mut u1_g_pt = AffinePoint::IDENTITY;
         Secp256r1::G.mul(&t, &mut u1_g_pt);
         // t <- r * s_inv (mod n)
-        unchecked::modmul_256(&r, &s_inv, &Secp256r1::N, &mut t);
+        modmul_256(&r, &s_inv, &Secp256r1::N, &mut t);
         // u₂Q <- [r * s_inv]Q
         let mut u2_q_pt = AffinePoint::IDENTITY;
         q_pt.mul(&t, &mut u2_q_pt);
@@ -178,28 +178,24 @@ mod host_impl {
         be_bytes_to_limbs(&bytes)
     }
 
-    fn ec_double(
-        point: &[[u32; 8]; 2],
+    fn ec_add(
+        a: &[[u32; 8]; 2],
+        b: &[[u32; 8]; 2],
         _curve: &[[u32; 8]; 3], // ignored, using ark_secp256r1
-        result: &mut [[u32; 8]; 2],
+        res: &mut [[u32; 8]; 2],
     ) {
-        let p = Affine::new(limbs_to_fq(&point[0]), limbs_to_fq(&point[1]));
-        let doubled = Projective::from(p).double().into_affine();
-        result[0] = fq_to_limbs(doubled.x);
-        result[1] = fq_to_limbs(doubled.y);
+        let a = Affine::new(limbs_to_fq(&a[0]), limbs_to_fq(&a[1]));
+        let b = Affine::new(limbs_to_fq(&b[0]), limbs_to_fq(&b[1]));
+        let sum = (Projective::from(a) + Projective::from(b)).into_affine();
+        res[0] = fq_to_limbs(sum.x);
+        res[1] = fq_to_limbs(sum.y);
     }
 
-    fn ec_add(
-        lhs: &[[u32; 8]; 2],
-        rhs: &[[u32; 8]; 2],
-        _curve: &[[u32; 8]; 3], // ignored, using ark_secp256r1
-        result: &mut [[u32; 8]; 2],
-    ) {
-        let p1 = Affine::new(limbs_to_fq(&lhs[0]), limbs_to_fq(&lhs[1]));
-        let p2 = Affine::new(limbs_to_fq(&rhs[0]), limbs_to_fq(&rhs[1]));
-        let sum = (Projective::from(p1) + Projective::from(p2)).into_affine();
-        result[0] = fq_to_limbs(sum.x);
-        result[1] = fq_to_limbs(sum.y);
+    fn ec_double(a: &[[u32; 8]; 2], _curve: &[[u32; 8]; 3], res: &mut [[u32; 8]; 2]) {
+        let a = Affine::new(limbs_to_fq(&a[0]), limbs_to_fq(&a[1]));
+        let double = Projective::from(a).double().into_affine();
+        res[0] = fq_to_limbs(double.x);
+        res[1] = fq_to_limbs(double.y);
     }
 
     #[unsafe(no_mangle)]
