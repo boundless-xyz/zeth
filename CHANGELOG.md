@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### ⚡️ Features
+
+- Add R0VM-optimized `modexp` precompile using `risc0-bigint2` for accelerated modular exponentiation (up to 4096-bit).
+
 ### ⚙️ Miscellaneous
 
 - Add Hoodi support and remove Holešky.
