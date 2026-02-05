@@ -24,8 +24,8 @@ zeth-chainspec = { path = "crates/chainspec" }
 
 # r0vm
 risc0-bigint2 = "1.4"
-risc0-build = "3.0.4"
-risc0-zkvm = "3.0.4"
+risc0-build = "3.0.5"
+risc0-zkvm = "3.0.5"
 
 # reth
 reth-chainspec = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10.2" }
