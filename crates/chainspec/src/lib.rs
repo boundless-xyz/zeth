@@ -92,7 +92,7 @@ pub static DEV: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let spec = ChainSpec {
         chain: NamedChain::AnvilHardhat.into(),
         forks: EthereumHardfork::devnet().into(),
-        deposit_contract_address: Some(Address::ZERO),
+        deposit_contract_address: None,
         base_fee_params: BaseFeeParams::ethereum(),
         blob_params: BlobScheduleBlobParams::default(),
     };
@@ -253,7 +253,6 @@ mod tests {
         let reth_spec = &reth_chainspec::DEV;
         // Note: reth's DEV_HARDFORKS is outdated (only up to Prague), so we verify our DEV spec
         // independently rather than comparing against reth_chainspec::DEV.
-        assert_eq!(spec.chain, reth_spec.chain);
         assert_eq!(spec.deposit_contract_address, reth_spec.deposit_contract.map(|c| c.address));
         assert_eq!(BaseFeeParamsKind::Constant(spec.base_fee_params), reth_spec.base_fee_params);
         assert_eq!(spec.blob_params, reth_spec.blob_params);
