@@ -162,11 +162,7 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
 
     /// Gets the input from the filesystem cache, or returns None.
     /// Handles migration from legacy formats automatically.
-    pub async fn get_input_cached(
-        &self,
-        block_hash: B256,
-        cache_dir: &Path,
-    ) -> Result<Option<Input>> {
+    pub fn get_input_cached(&self, block_hash: B256, cache_dir: &Path) -> Result<Option<Input>> {
         // 1. Try current version
         if let Some(input) = Current.load_from_dir(block_hash, cache_dir)? {
             return Ok(Some(input));
