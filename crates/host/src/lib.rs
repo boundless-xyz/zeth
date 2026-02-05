@@ -19,7 +19,7 @@ use alloy::{
     rpc::types::debug::ExecutionWitness,
 };
 use anyhow::{Context, Result, bail};
-use guests::{HOODI_ELF, MAINNET_ELF, SEPOLIA_ELF};
+use guests::{DEV_ELF, HOODI_ELF, MAINNET_ELF, SEPOLIA_ELF};
 use reth_chainspec::{ChainSpec, EthChainSpec, NamedChain};
 use reth_ethereum_primitives::{Block, TransactionSigned};
 use reth_stateless::UncompressedPublicKey;
@@ -60,6 +60,7 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
             NamedChain::Mainnet => reth_chainspec::MAINNET.clone(),
             NamedChain::Sepolia => reth_chainspec::SEPOLIA.clone(),
             NamedChain::Hoodi => reth_chainspec::HOODI.clone(),
+            NamedChain::AnvilHardhat => reth_chainspec::DEV.clone(),
             chain => bail!("unsupported chain: {chain}"),
         };
 
@@ -83,6 +84,7 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
             NamedChain::Mainnet => MAINNET_ELF,
             NamedChain::Sepolia => SEPOLIA_ELF,
             NamedChain::Hoodi => HOODI_ELF,
+            NamedChain::AnvilHardhat => DEV_ELF,
             chain => bail!("unsupported chain for proving: {chain}"),
         };
         let image_id = compute_image_id(elf).context("failed to compute image id")?;
@@ -160,6 +162,27 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
         Ok((info.receipt, image_id))
     }
 
+    /// Gets the input from the filesystem cache, or returns None.
+    /// Handles migration from legacy formats automatically.
+    pub fn get_input_cached(&self, block_hash: B256, cache_dir: &Path) -> Result<Option<Input>> {
+        // 1. Try current version
+        if let Some(input) = Current.load_from_dir(block_hash, cache_dir)? {
+            return Ok(Some(input));
+        }
+        // 2. Try legacy versions
+        for format in LEGACY_FORMATS {
+            if let Some(input) = format.load_from_dir(block_hash, cache_dir)? {
+                // Migration: Save as current version
+                if let Err(err) = self.save_to_cache(&input, cache_dir) {
+                    tracing::warn!("Failed to save migrated cache: {}", err);
+                }
+
+                return Ok(Some(input));
+            }
+        }
+        Ok(None)
+    }
+
     /// Fetches input, using the filesystem cache if available.
     /// Handles migration from legacy formats automatically.
     pub async fn get_input_with_cache(&self, block_id: BlockId, cache_dir: &Path) -> Result<Input> {
@@ -178,20 +201,8 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
             }
         };
 
-        // 1. Try current version
-        if let Some(input) = Current.load_from_dir(block_hash, cache_dir)? {
+        if let Some(input) = self.get_input_cached(block_hash, cache_dir)? {
             return Ok(input);
-        }
-        // 2. Try legacy versions
-        for format in LEGACY_FORMATS {
-            if let Some(input) = format.load_from_dir(block_hash, cache_dir)? {
-                // Migration: Save as current version
-                if let Err(err) = self.save_to_cache(&input, cache_dir) {
-                    tracing::warn!("Failed to save migrated cache: {}", err);
-                }
-
-                return Ok(input);
-            }
         }
 
         tracing::info!("Cache miss for block {block_hash}. Fetching from RPC.");

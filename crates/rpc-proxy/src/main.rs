@@ -22,7 +22,7 @@ use alloy::{
 use anyhow::{Context, bail};
 use clap::Parser;
 use reqwest::Client;
-use reth_chainspec::{HOODI, MAINNET, NamedChain, SEPOLIA};
+use reth_chainspec::{DEV, HOODI, MAINNET, NamedChain, SEPOLIA};
 use reth_evm_ethereum::EthEvmConfig;
 use serde_json::{Value, json};
 use std::sync::Arc;
@@ -219,6 +219,7 @@ async fn main() -> anyhow::Result<()> {
         NamedChain::Mainnet => Arc::new(EthEvmConfig::ethereum(MAINNET.clone())),
         NamedChain::Hoodi => Arc::new(EthEvmConfig::ethereum(HOODI.clone())),
         NamedChain::Sepolia => Arc::new(EthEvmConfig::ethereum(SEPOLIA.clone())),
+        NamedChain::AnvilHardhat => Arc::new(EthEvmConfig::ethereum(DEV.clone())),
         _ => bail!("Unsupported chain: {chain}"),
     };
     info!("EVM config: {}", chain);
