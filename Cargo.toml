@@ -23,6 +23,7 @@ zeth-core = { path = "crates/core" }
 zeth-chainspec = { path = "crates/chainspec" }
 
 # r0vm
+risc0-bigint2 = "1.4"
 risc0-build = "3.0.4"
 risc0-zkvm = "3.0.4"
 
@@ -57,6 +58,7 @@ blst = "0.3.15"
 bytemuck = "1.23"
 clap = "4.5"
 itertools = "0.14"
+num-bigint = "0.4"
 serde = "1.0"
 serde_with = "3.14"
 serde_json = "1.0"
