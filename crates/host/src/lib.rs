@@ -201,7 +201,7 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
             }
         };
 
-        if let Some(input) = self.get_input_cached(block_hash, cache_dir).await? {
+        if let Some(input) = self.get_input_cached(block_hash, cache_dir)? {
             return Ok(input);
         }
 
