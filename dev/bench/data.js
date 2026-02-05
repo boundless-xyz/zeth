@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770306080775,
+  "lastUpdate": 1770309844430,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -233,6 +233,50 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/boundless-xyz/zeth/commit/dd079ab51e5ec023418f722981aa31b87efed461"
         },
         "date": 1770306079721,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 884473856,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 725879521,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 10504980,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 715342664,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "victor@subgraf.dev",
+            "name": "Victor Snyder-Graf",
+            "username": "nategraf"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "01612b897119f17e3ecece8a9401da575e6478db",
+          "message": "Add support for running against a anvil devnet when using proxy (#205)\n\n* build(deps): bump reqwest from 0.12.28 to 0.13.1 (#203)\n\nBumps [reqwest](https://github.com/seanmonstar/reqwest) from 0.12.28 to 0.13.1.\n- [Release notes](https://github.com/seanmonstar/reqwest/releases)\n- [Changelog](https://github.com/seanmonstar/reqwest/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/seanmonstar/reqwest/compare/v0.12.28...v0.13.1)\n\n---\nupdated-dependencies:\n- dependency-name: reqwest\n  dependency-version: 0.13.1\n  dependency-type: direct:production\n  update-type: version-update:semver-minor\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>\n\n* fix copyright year\n\n* use Anvil chain consistently\n\n* fix tests\n\n---------\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>\nCo-authored-by: Wolfgang Welz <welzwo@gmail.com>",
+          "timestamp": "2026-02-05T17:41:10+01:00",
+          "tree_id": "8cf6cbdc93bb3cc43661f2c51b2153727f1a0aff",
+          "url": "https://github.com/boundless-xyz/zeth/commit/01612b897119f17e3ecece8a9401da575e6478db"
+        },
+        "date": 1770309843387,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
