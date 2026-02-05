@@ -9,11 +9,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-# this is needed to gain access via OIDC to the S3 bucket for caching
 permissions:
   id-token: write
-  contents: write  # needed for gh-pages benchmark data
-  pull-requests: write  # needed for PR comments
+  contents: write
+  pull-requests: write
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -46,10 +45,37 @@ jobs:
       - name: run tests
         env:
           RISC0_DEV_MODE: true
+        run: cargo test --all-features --locked
+
+      - name: show sccache stats
+        run: sccache --show-stats
+
+  benchmark:
+    runs-on: [ self-hosted, prod, Linux, X64, cpu ]
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: install rust
+        uses: risc0/risc0/.github/actions/rustup@fbe1d0bb75c21fe36cefd87bae25f424b711b291
+
+      - name: install sccache
+        uses: boundless-xyz/boundless/.github/actions/sccache@main
+        with:
+          key: Linux-default
+
+      - name: install risc0
+        uses: ./.github/actions/risc0-toolchain
+        with:
+          version: ${{ env.RISC0_VERSION }}
+          rust-version: ${{ env.RISC0_RUST_VERSION }}
+
+      - name: run e2e benchmark
+        env:
           RISC0_INFO: true
         run: |
           set -o pipefail
-          cargo test --locked 2>&1 | tee test-output.log
+          cargo test --test e2e --locked 2>&1 | tee test-output.log
 
       - name: extract cycle metrics
         run: .github/scripts/extract-cycle-metrics.sh test-output.log benchmark-results.json

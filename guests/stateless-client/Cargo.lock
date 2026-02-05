@@ -6337,6 +6337,7 @@ version = "0.3.0"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
+ "num-bigint",
  "reth-chainspec",
  "reth-errors",
  "reth-ethereum-primitives",
@@ -6345,6 +6346,7 @@ dependencies = [
  "reth-primitives-traits",
  "reth-stateless",
  "reth-trie-common",
+ "risc0-bigint2",
  "risc0-ethereum-trie",
  "serde",
  "serde_with",
