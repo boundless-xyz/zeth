@@ -15,6 +15,9 @@
 use alloy::{eips::BlockId, primitives::B256, providers::ProviderBuilder};
 use anyhow::{Context, ensure};
 use clap::{Parser, Subcommand};
+use tokio::time::Instant;
+use tracing::level_filters::LevelFilter;
+use tracing_subscriber::EnvFilter;
 use std::{
     cmp::PartialEq,
     fs::{self},
@@ -58,9 +61,20 @@ struct ProveCommand {
     segment_po2: Option<u32>,
 }
 
+/// Configure the tracing library.
+fn setup_tracing() {
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env_lossy(),
+        )
+        .init();
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    tracing_subscriber::fmt::init();
+    setup_tracing();
 
     // This is a hack to ensure that `blst` gets linked into this binary.
     let _ = unsafe { blst::blst_p1_sizeof() };
@@ -73,26 +87,34 @@ async fn main() -> anyhow::Result<()> {
     // set up the provider and processor
     let provider = ProviderBuilder::new().connect(&cli.eth_rpc_url).await?;
     let processor = BlockProcessor::new(provider).await?;
-    println!("Current chain: {}", processor.chain());
+
+    tracing::info!(chain = %processor.chain(), "Initialized block processor");
+    let retrieve_input_start = Instant::now();
 
     let input = processor.get_input_with_cache(cli.block, &cli.cache_dir).await?;
     let block_hash = input.block.hash_slow();
 
-    println!(
-        "Input for block {} ({}): {:.3} MB",
-        input.block.number,
-        block_hash,
-        to_zkvm_input_bytes(&input)?.len() as f64 / 1e6
+    tracing::info!(
+        block_number=input.block.number,
+        %block_hash,
+        size=format!("{:.3} MB", to_zkvm_input_bytes(&input)?.len() as f64 / 1e6),
+        elapsed=?retrieve_input_start.elapsed(),
+        "Retrieved input for block",
     );
 
     // always validate
+    let validate_start = Instant::now();
     processor.validate(input.clone()).context("host validation failed")?;
-    println!("Host validation successful");
+    tracing::info!(elapsed=?validate_start.elapsed(), "Host validation successful");
 
     // create proof if requested
     if let Commands::Prove(ProveCommand { segment_po2 }) = cli.command {
+        let proving_start = Instant::now();
+
         let (receipt, image_id) =
             processor.prove(input, segment_po2).await.context("proving failed")?;
+
+        tracing::info!(elapsed=?proving_start.elapsed(), "Proving completed");
         receipt.verify(image_id).context("proof verification failed")?;
 
         let proven_hash =
