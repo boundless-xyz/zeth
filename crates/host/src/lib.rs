@@ -34,6 +34,8 @@ use std::{
 };
 use zeth_core::Input;
 
+mod cycle_tracker;
+
 /// Processes Ethereum blocks, including creating inputs, validating, and proving.
 pub struct BlockProcessor<P> {
     /// The provider for fetching data from the Ethereum network.
@@ -146,20 +148,31 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
         opts: ProverOpts,
     ) -> Result<(Receipt, Digest)> {
         let (elf, image_id) = self.elf()?;
+        let chain_spec = self.chain_spec.clone();
 
         // prove in a blocking thread using the default prover
-        let info = tokio::task::spawn_blocking(move || {
-            let mut env_builder = ExecutorEnvBuilder::default();
-            if let Some(po2) = po2 {
-                env_builder.segment_limit_po2(po2);
-            }
-            let env = env_builder.write(&input)?.build()?;
-            default_prover().prove_with_opts(env, elf, &opts)
+        let proof = tokio::task::spawn_blocking(move || {
+            // initialize Tracker (Real or No-Op based on feature flag)
+            let mut tracer = cycle_tracker::HostCycleTracker::new(chain_spec, &input.block.header);
+
+            let proof = {
+                let mut env_builder = ExecutorEnvBuilder::default();
+                if let Some(po2) = po2 {
+                    env_builder.segment_limit_po2(po2);
+                }
+                tracer.attach(&mut env_builder);
+                let env = env_builder.write(&input)?.build()?;
+                default_prover().prove_with_opts(env, elf, &opts)?
+            };
+            // save trace to file
+            tracer.save().context("failed to save traces")?;
+
+            Ok::<_, anyhow::Error>(proof)
         })
         .await
         .context("prover task panicked")??;
 
-        Ok((info.receipt, image_id))
+        Ok((proof.receipt, image_id))
     }
 
     /// Gets the input from the filesystem cache, or returns None.
@@ -299,7 +312,7 @@ pub fn to_zkvm_input_bytes(input: &Input) -> Result<Vec<u8>> {
     Ok(bytes.to_vec())
 }
 
-/// Recovers the signing [`VerifyingKey`] from each transaction's signature.
+/// Recovers the signing public key from each transaction's signature.
 pub fn recover_signers<'a, I>(txs: I) -> Result<Vec<UncompressedPublicKey>>
 where
     I: IntoIterator<Item = &'a TransactionSigned>,
