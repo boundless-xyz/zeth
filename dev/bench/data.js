@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770290960899,
+  "lastUpdate": 1770306080775,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -209,6 +209,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "validation_cycles",
             "value": 715133305,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "welzwo@gmail.com",
+            "name": "Wolfgang Welz",
+            "username": "Wollac"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "dd079ab51e5ec023418f722981aa31b87efed461",
+          "message": "Update risc0 to 3.0.5 (#208)\n\n* update risc0 to 3.0.5\n\n* fix merge artifact",
+          "timestamp": "2026-02-05T15:34:47Z",
+          "tree_id": "e2b4f4dee37f3fa11db993c195553a4e4671d6b0",
+          "url": "https://github.com/boundless-xyz/zeth/commit/dd079ab51e5ec023418f722981aa31b87efed461"
+        },
+        "date": 1770306079721,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 884473856,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 725879521,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 10504980,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 715342664,
             "unit": "cycles"
           }
         ]
