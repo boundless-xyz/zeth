@@ -14,6 +14,8 @@
 
 //! BigUint-based mock implementation of modmul for host-side testing.
 
+#![allow(unused)]
+
 use super::biguint_to_limbs;
 use num_bigint::BigUint;
 

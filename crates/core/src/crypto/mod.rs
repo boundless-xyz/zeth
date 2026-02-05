@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(all(feature = "r0vm", not(all(target_os = "zkvm", target_vendor = "risc0"))))]
+#[cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))]
 mod host_impl;
 mod modexp;
+#[cfg(any(test, all(target_os = "zkvm", target_vendor = "risc0")))]
 mod p256;
 
 use num_bigint::BigUint;
@@ -60,6 +61,7 @@ impl Crypto for R0vmCrypto {
         DefaultCrypto.modexp(base, exp, modulus)
     }
 
+    #[cfg(any(test, all(target_os = "zkvm", target_vendor = "risc0")))]
     #[inline]
     fn secp256r1_verify_signature(&self, msg: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64]) -> bool {
         p256::verify_signature(msg, sig, pk)

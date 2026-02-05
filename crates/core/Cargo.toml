@@ -10,8 +10,9 @@ repository = { workspace = true }
 # Allow proving of pre-merge (Proof-of-Work) blocks.
 # This is considered unsafe because reth does not correctly validate all difficulty constraints.
 unsafe-pre-merge = []
-# Enable R0VM optimized implementation for precompiles
-r0vm = ["dep:ark-ec", "dep:ark-ff", "dep:ark-secp256r1", "dep:num-bigint", "dep:risc0-bigint2"]
+# Enable R0VM optimized crypto implementations for precompiles.
+# - secp256r1: only available on zkvm target or in tests (requires syscall mocks)
+r0vm = ["dep:num-bigint", "dep:risc0-bigint2"]
 
 [dependencies]
 alloy-primitives = { workspace = true, features = ["map"] }
@@ -30,12 +31,10 @@ risc0-ethereum-trie = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }
 
-[target.'cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))'.dependencies]
-ark-ec = { workspace = true, optional = true }
-ark-ff = { workspace = true, optional = true }
-ark-secp256r1 = { workspace = true, optional = true }
-
 [dev-dependencies]
+ark-ec = { workspace = true }
+ark-ff = { workspace = true }
+ark-secp256r1 = { workspace = true }
 rstest = { workspace = true }
 
 [lints]
