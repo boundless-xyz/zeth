@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1769796632378,
+  "lastUpdate": 1770290960899,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -165,6 +165,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "validation_cycles",
             "value": 717690435,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "welzwo@gmail.com",
+            "name": "Wolfgang Welz",
+            "username": "Wollac"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "6c70ee04388cfdeb577f60c314121321b296f798",
+          "message": "feat: add accelerated `modexp` (#204)\n\n* add accelerated modexp\n\n* enable\n\n* Move benchmarking into own job\n\n* run all tests\n\n* num-bigint should be optional\n\n* update CHANGELOG.md",
+          "timestamp": "2026-02-05T12:22:53+01:00",
+          "tree_id": "a0b2ddee5ce6ff09c6c6244790486e22ed65a4ce",
+          "url": "https://github.com/boundless-xyz/zeth/commit/6c70ee04388cfdeb577f60c314121321b296f798"
+        },
+        "date": 1770290959889,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 887095296,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 725670162,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 10504980,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 715133305,
             "unit": "cycles"
           }
         ]
