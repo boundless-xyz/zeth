@@ -14,7 +14,7 @@ alloy-primitives = { version = "*", features = ["tiny-keccak"] }
 blst = { version = "=0.3.15" }
 c-kzg = { version = "=2.1.5" }
 revm = { version = "*", default-features = false, features = ["blst", "bn", "c-kzg"] }
-risc0-zkvm = "3.0.5"
+risc0-zkvm = { path = "../../risc0/risc0/zkvm" }
 sha2 = { version = "=0.10.9" }
 substrate-bn = { version = "=0.6.0" }
 tiny-keccak = { version = "=2.0.2" }

@@ -1179,16 +1179,14 @@ source = "git+https://github.com/risc0/blst?tag=v0.3.15-risczero.1#3d1833ff0c245
 dependencies = [
  "cc",
  "glob",
- "risc0-bigint2",
+ "risc0-bigint2 1.4.13",
  "threadpool",
  "zeroize",
 ]
 
 [[package]]
 name = "bonsai-sdk"
-version = "1.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a381a5f681e536070483826412fcfcd6f6637921717c6aa0a3759926899ee9c2"
+version = "1.4.3"
 dependencies = [
  "duplicate",
  "maybe-async",
@@ -1879,6 +1877,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "enum-map"
+version = "2.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6866f3bfdf8207509a033af1a75a7b08abda06bbaaeae6669323fd5a097df2e9"
+dependencies = [
+ "enum-map-derive",
+ "serde",
+]
+
+[[package]]
+name = "enum-map-derive"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f282cfdfe92516eb26c2af8589c274c7c17681f5ecc03c18255fe741c6aa64eb"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.114",
+]
+
+[[package]]
 name = "enum-ordinalize"
 version = "4.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2188,9 +2207,9 @@ checksum = "42012b0f064e01aa58b545fe3727f90f7dd4020f4a3ea735b50344965f5a57e9"
 
 [[package]]
 name = "generic-array"
-version = "0.14.9"
+version = "0.14.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bb6743198531e02858aeaea5398fcc883e71851fcbcb5a2f773e2fb6cb1edf2"
+checksum = "85649ca51fd72272d7821adaf274ad91c288277713d9c18820d8499a7ff69e9a"
 dependencies = [
  "typenum",
  "version_check",
@@ -2239,6 +2258,25 @@ dependencies = [
  "ff",
  "rand_core 0.6.4",
  "subtle",
+]
+
+[[package]]
+name = "h2"
+version = "0.4.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2f44da3a8150a6703ed5d34e164b875fd14c2cdab9af1252a9a1020bde2bdc54"
+dependencies = [
+ "atomic-waker",
+ "bytes",
+ "fnv",
+ "futures-core",
+ "futures-sink",
+ "http",
+ "indexmap 2.13.0",
+ "slab",
+ "tokio",
+ "tokio-util",
+ "tracing",
 ]
 
 [[package]]
@@ -2376,6 +2414,7 @@ dependencies = [
  "bytes",
  "futures-channel",
  "futures-core",
+ "h2",
  "http",
  "http-body",
  "httparse",
@@ -2687,7 +2726,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "once_cell",
- "risc0-bigint2",
+ "risc0-bigint2 1.4.13",
  "serdect",
  "sha2",
 ]
@@ -2843,6 +2882,15 @@ name = "memchr"
 version = "2.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
+
+[[package]]
+name = "memmap2"
+version = "0.9.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "744133e4a0e0a658e1374cf3bf8e415c4052a15a111acd372764c55b4177d490"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "merlin"
@@ -3818,6 +3866,7 @@ dependencies = [
  "futures-channel",
  "futures-core",
  "futures-util",
+ "h2",
  "http",
  "http-body",
  "http-body-util",
@@ -4494,6 +4543,14 @@ dependencies = [
 
 [[package]]
 name = "risc0-bigint2"
+version = "1.4.12"
+dependencies = [
+ "include_bytes_aligned",
+ "stability",
+]
+
+[[package]]
+name = "risc0-bigint2"
 version = "1.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af3997ed5c8a35afd2fa39055f1b841e19571379e55ee634a06c41d7b924052d"
@@ -4504,9 +4561,7 @@ dependencies = [
 
 [[package]]
 name = "risc0-binfmt"
-version = "3.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1883f0c5d19b865f395209a137dcb29e56dc49951424967b8d0114c129f46e77"
+version = "5.0.0"
 dependencies = [
  "anyhow",
  "borsh",
@@ -4526,9 +4581,7 @@ dependencies = [
 
 [[package]]
 name = "risc0-build"
-version = "3.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f89937fa1c424b188cc4cabf65335736eca9c1e3df79c127f48636f55682f3a4"
+version = "5.0.0"
 dependencies = [
  "anyhow",
  "cargo_metadata",
@@ -4536,6 +4589,7 @@ dependencies = [
  "dirs",
  "docker-generate",
  "hex",
+ "rayon",
  "risc0-binfmt",
  "risc0-zkos-v1compat",
  "risc0-zkp",
@@ -4550,9 +4604,7 @@ dependencies = [
 
 [[package]]
 name = "risc0-circuit-keccak"
-version = "4.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f543c60287fece797a5da4209384ab1bfebd9644fcfe591e11b1aa85f1a02f8"
+version = "5.0.0"
 dependencies = [
  "anyhow",
  "bytemuck",
@@ -4566,9 +4618,7 @@ dependencies = [
 
 [[package]]
 name = "risc0-circuit-recursion"
-version = "4.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2347e909c6b2a65584b5898f3802eec5b8c1b4b45329edfdd8587b6a04dd3357"
+version = "5.0.0"
 dependencies = [
  "anyhow",
  "bytemuck",
@@ -4581,27 +4631,30 @@ dependencies = [
 
 [[package]]
 name = "risc0-circuit-rv32im"
-version = "4.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61676419814a818fdb5e10066b13c5488b3f54aa9668794bd06c99bc91bff1f2"
+version = "5.0.0"
 dependencies = [
  "anyhow",
  "bit-vec",
  "bytemuck",
  "derive_more",
+ "enum-map",
+ "heck",
  "paste",
+ "proc-macro2",
+ "quote",
  "risc0-binfmt",
  "risc0-core",
  "risc0-zkp",
+ "risc0-zkvm-platform",
  "serde",
+ "syn 2.0.114",
+ "thiserror",
  "tracing",
 ]
 
 [[package]]
 name = "risc0-core"
-version = "3.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b5b956a976b8ce4713694dcc6c370b522a42ccef4ba45da5b6e57dbf26cdb7b1"
+version = "5.0.0"
 dependencies = [
  "bytemuck",
  "rand_core 0.9.5",
@@ -4622,9 +4675,7 @@ dependencies = [
 
 [[package]]
 name = "risc0-groth16"
-version = "3.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc57e76bb87193d154ac5ee6ee352fbd7edabddab36f02a81f40a048e5ca14f9"
+version = "5.0.0"
 dependencies = [
  "anyhow",
  "ark-bn254",
@@ -4634,6 +4685,7 @@ dependencies = [
  "ark-serialize 0.5.0",
  "bytemuck",
  "hex",
+ "memmap2",
  "num-bigint",
  "num-traits",
  "risc0-binfmt",
@@ -4642,21 +4694,26 @@ dependencies = [
 ]
 
 [[package]]
-name = "risc0-zkos-v1compat"
-version = "2.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8bd70cb45b5d37d025f25663b87c6b9dc9df7f413ee2068531a57f50b0eb95db"
+name = "risc0-zkos-common"
+version = "5.0.0"
 dependencies = [
- "include_bytes_aligned",
- "no_std_strings",
  "risc0-zkvm-platform",
 ]
 
 [[package]]
+name = "risc0-zkos-v1compat"
+version = "5.0.0"
+dependencies = [
+ "include_bytes_aligned",
+ "no_std_strings",
+ "risc0-zkos-common",
+ "risc0-zkvm-platform",
+ "sha2",
+]
+
+[[package]]
 name = "risc0-zkp"
-version = "3.0.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f40d362a6c146ec6dc69208f539b92fd86e47b0dbc2083801423034a38155a2"
+version = "5.0.0"
 dependencies = [
  "anyhow",
  "blake2",
@@ -4664,6 +4721,7 @@ dependencies = [
  "bytemuck",
  "cfg-if",
  "digest 0.10.7",
+ "generic-array",
  "hex",
  "hex-literal",
  "metal",
@@ -4679,9 +4737,7 @@ dependencies = [
 
 [[package]]
 name = "risc0-zkvm"
-version = "3.0.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22b7eafb5d85be59cbd9da83f662cf47d834f1b836e14f675d1530b12c666867"
+version = "5.0.0"
 dependencies = [
  "anyhow",
  "bincode",
@@ -4689,7 +4745,9 @@ dependencies = [
  "borsh",
  "bytemuck",
  "bytes",
+ "cfg-if",
  "derive_more",
+ "enum-map",
  "hex",
  "lazy-regex",
  "prost",
@@ -4715,9 +4773,7 @@ dependencies = [
 
 [[package]]
 name = "risc0-zkvm-platform"
-version = "2.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4db893788c416287e2e1a87e6b8f5302511a04a45329e699d6a32a16874fd24f"
+version = "5.0.0"
 dependencies = [
  "bytemuck",
  "cfg-if",
@@ -4908,9 +4964,7 @@ checksum = "a50f4cf475b65d88e057964e0e9bb1f0aa9bbb2036dc65c64596b42932536984"
 
 [[package]]
 name = "rzup"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d2aed296f203fa64bcb4b52069356dd86d6ec578593985b919b6995bee1f0ae"
+version = "0.6.0"
 dependencies = [
  "hex",
  "rsa",
@@ -5320,7 +5374,7 @@ dependencies = [
  "crypto-bigint",
  "lazy_static",
  "rand 0.8.5",
- "risc0-bigint2",
+ "risc0-bigint2 1.4.13",
  "rustc-hex",
 ]
 
@@ -6356,7 +6410,7 @@ dependencies = [
  "reth-primitives-traits",
  "reth-stateless",
  "reth-trie-common",
- "risc0-bigint2",
+ "risc0-bigint2 1.4.12",
  "risc0-ethereum-trie",
  "serde",
  "serde_with",
