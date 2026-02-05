@@ -19,7 +19,7 @@ use alloy::{
     rpc::types::debug::ExecutionWitness,
 };
 use anyhow::{Context, Result, bail};
-use guests::{HOODI_ELF, MAINNET_ELF, SEPOLIA_ELF};
+use guests::{DEV_ELF, HOODI_ELF, MAINNET_ELF, SEPOLIA_ELF};
 use reth_chainspec::{ChainSpec, EthChainSpec, NamedChain};
 use reth_ethereum_primitives::{Block, TransactionSigned};
 use reth_stateless::UncompressedPublicKey;
@@ -62,6 +62,7 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
             NamedChain::Mainnet => reth_chainspec::MAINNET.clone(),
             NamedChain::Sepolia => reth_chainspec::SEPOLIA.clone(),
             NamedChain::Hoodi => reth_chainspec::HOODI.clone(),
+            NamedChain::AnvilHardhat => reth_chainspec::DEV.clone(),
             chain => bail!("unsupported chain: {chain}"),
         };
 
@@ -85,6 +86,7 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
             NamedChain::Mainnet => MAINNET_ELF,
             NamedChain::Sepolia => SEPOLIA_ELF,
             NamedChain::Hoodi => HOODI_ELF,
+            NamedChain::AnvilHardhat => DEV_ELF,
             chain => bail!("unsupported chain for proving: {chain}"),
         };
         let image_id = compute_image_id(elf).context("failed to compute image id")?;
@@ -212,7 +214,7 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
             }
         };
 
-        if let Some(input) = self.get_input_cached(block_hash, cache_dir).await? {
+        if let Some(input) = self.get_input_cached(block_hash, cache_dir)? {
             return Ok(input);
         }
 

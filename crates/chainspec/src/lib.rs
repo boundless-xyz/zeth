@@ -39,6 +39,7 @@ const SEPOLIA_DEPOSIT_CONTRACT_ADDRESS: Address =
 const HOODI_DEPOSIT_CONTRACT_ADDRESS: Address =
     address!("0x00000000219ab540356cBB839Cbe05303d7705Fa");
 
+/// Ethereum Mainnet specification.
 pub static MAINNET: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let spec = ChainSpec {
         chain: NamedChain::Mainnet.into(),
@@ -53,6 +54,7 @@ pub static MAINNET: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     spec.into()
 });
 
+/// Sepolia testnet specification.
 pub static SEPOLIA: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let spec = ChainSpec {
         chain: NamedChain::Sepolia.into(),
@@ -67,6 +69,7 @@ pub static SEPOLIA: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     spec.into()
 });
 
+/// Hoodi testnet specification.
 pub static HOODI: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let spec = ChainSpec {
         chain: NamedChain::Hoodi.into(),
@@ -77,6 +80,21 @@ pub static HOODI: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
             (hoodi::HOODI_BPO1_TIMESTAMP, BlobParams::bpo1()),
             (hoodi::HOODI_BPO2_TIMESTAMP, BlobParams::bpo2()),
         ]),
+    };
+    spec.into()
+});
+
+/// Development chain specification for local testing with Anvil (chain ID 31337).
+///
+/// All hardforks are activated at genesis (block 0 / timestamp 0).
+/// Use with `anvil` or any node configured with chain ID 31337.
+pub static DEV: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
+    let spec = ChainSpec {
+        chain: NamedChain::AnvilHardhat.into(),
+        forks: EthereumHardfork::devnet().into(),
+        deposit_contract_address: None,
+        base_fee_params: BaseFeeParams::ethereum(),
+        blob_params: BlobScheduleBlobParams::default(),
     };
     spec.into()
 });
@@ -227,5 +245,16 @@ mod tests {
     #[test]
     fn hoodi() {
         assert_eq(&HOODI, &reth_chainspec::HOODI);
+    }
+
+    #[test]
+    fn dev() {
+        let spec = &DEV;
+        let reth_spec = &reth_chainspec::DEV;
+        // Note: reth's DEV_HARDFORKS is outdated (only up to Prague), so we verify our DEV spec
+        // independently rather than comparing against reth_chainspec::DEV.
+        assert_eq!(spec.deposit_contract_address, reth_spec.deposit_contract.map(|c| c.address));
+        assert_eq!(BaseFeeParamsKind::Constant(spec.base_fee_params), reth_spec.base_fee_params);
+        assert_eq!(spec.blob_params, reth_spec.blob_params);
     }
 }
