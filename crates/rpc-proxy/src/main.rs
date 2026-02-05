@@ -219,7 +219,7 @@ async fn main() -> anyhow::Result<()> {
         NamedChain::Mainnet => Arc::new(EthEvmConfig::ethereum(MAINNET.clone())),
         NamedChain::Hoodi => Arc::new(EthEvmConfig::ethereum(HOODI.clone())),
         NamedChain::Sepolia => Arc::new(EthEvmConfig::ethereum(SEPOLIA.clone())),
-        NamedChain::AnvilHardhat | NamedChain::Dev => Arc::new(EthEvmConfig::ethereum(DEV.clone())),
+        NamedChain::AnvilHardhat => Arc::new(EthEvmConfig::ethereum(DEV.clone())),
         _ => bail!("Unsupported chain: {chain}"),
     };
     info!("EVM config: {}", chain);
