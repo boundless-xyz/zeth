@@ -17,6 +17,7 @@
 use super::biguint_to_limbs;
 use num_bigint::BigUint;
 
+// On host, unchecked and checked are identical; re-export to match risc0_bigint2 structure.
 pub(super) mod unchecked {
     pub(crate) use super::*;
 }

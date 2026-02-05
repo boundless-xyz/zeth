@@ -40,6 +40,8 @@ impl BitAccess for [u8] {
 }
 
 /// Computes `base^exp mod modulus` using square-and-multiply with N-limb arithmetic.
+///
+/// `modmul_fn` is expected to be unchecked; final `is_less` ensures canonical result.
 pub(super) fn modexp_generic<const N: usize, F>(
     base: &[u8],
     exp: &[u8],
@@ -57,7 +59,7 @@ where
         return vec![];
     }
 
-    // Fast path: base fits inside the limp array
+    // Fast path: base fits inside the limb array
     let base_arr = if base.len() <= N * LIMB_BYTES {
         be_bytes_to_limbs(base)
     } else {
@@ -69,23 +71,23 @@ where
     };
 
     // Double buffering to avoid mem copy
-    let mut buf_a = [0u32; N];
-    let mut buf_b = [0u32; N];
-    let mut curr = &mut buf_a;
-    let mut next = &mut buf_b;
+    let mut t1 = [0u32; N];
+    let mut t2 = [0u32; N];
+    let mut curr = &mut t1;
+    let mut next = &mut t2;
 
     // Initialize result to 1
     curr[0] = 1;
 
     // Exponentiation by squaring (left-to-right)
     for i in (0..exp.bits()).rev() {
-        // Square: next = curr * curr
+        // next <- curr^2
         modmul_fn(curr, curr, &mod_arr, next);
         if exp.bit(i) {
-            // Multiply: curr = next * base
+            // curr <- next * base
             modmul_fn(next, &base_arr, &mod_arr, curr);
         } else {
-            // Swap: curr = next
+            // curr <- next
             std::mem::swap(&mut curr, &mut next);
         }
     }

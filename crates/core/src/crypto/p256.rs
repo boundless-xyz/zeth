@@ -14,7 +14,7 @@
 
 //! secp256r1 (P-256) ECDSA signature verification optimized for R0VM.
 //!
-//! Implements [EIP-7212](https://eips.ethereum.org/EIPS/eip-7212).
+//! Implements [EIP-7951](https://eips.ethereum.org/EIPS/eip-7951).
 
 use super::{be_bytes_to_limbs, is_less, modadd_256, modmul_256, unchecked};
 use risc0_bigint2::ec::{AffinePoint, Curve, EC_256_WIDTH_WORDS, WeierstrassCurve};
@@ -26,6 +26,7 @@ const N_LIMBS_256: usize = EC_256_WIDTH_WORDS;
 const ZERO: [u32; N_LIMBS_256] = [0; N_LIMBS_256];
 
 /// The secp256r1 (P-256) curve.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Secp256r1 {}
 
 impl Secp256r1 {
@@ -66,6 +67,7 @@ impl Secp256r1 {
         let mut t1 = [0u32; N_LIMBS_256];
         let mut t2 = [0u32; N_LIMBS_256];
 
+        // unchecked: final equality is reduction-agnostic
         // t1 <- x^2
         unchecked::modmul_256(x, x, &Self::PRIME, &mut t1);
         // t2 <- x^2 + a
@@ -73,9 +75,9 @@ impl Secp256r1 {
         // t1 <- x(x^2 + a)
         unchecked::modmul_256(&t2, x, &Self::PRIME, &mut t1);
         // t2 <- (x^3 + ax) + b [RHS]
-        modadd_256(&t1, &Self::B, &Self::PRIME, &mut t2);
+        unchecked::modadd_256(&t1, &Self::B, &Self::PRIME, &mut t2);
         // t1 <- y^2 [LHS]
-        modmul_256(y, y, &Self::PRIME, &mut t1);
+        unchecked::modmul_256(y, y, &Self::PRIME, &mut t1);
 
         t1 == t2
     }
@@ -95,7 +97,7 @@ pub(super) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64
     let r = be_bytes_to_limbs(&sig[0..32]);
     let s = be_bytes_to_limbs(&sig[32..64]);
     // Validate: 0 < r < n and 0 < s < n
-    if !(r != ZERO && is_less(&r, &Secp256r1::N)) || !(s != ZERO && is_less(&s, &Secp256r1::N)) {
+    if r == ZERO || !is_less(&r, &Secp256r1::N) || s == ZERO || !is_less(&s, &Secp256r1::N) {
         return false;
     }
 
@@ -113,8 +115,9 @@ pub(super) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64
 
     let q_pt = AffinePoint::new_unchecked(qx, qy);
 
-    // s_inv = s^(-1) (mod n)
     let mut s_inv = [0u32; N_LIMBS_256];
+    // s_inv <- s^(-1) (mod n)
+    // unchecked: feeds checked modmul below
     unchecked::modinv_256(&s, &Secp256r1::N, &mut s_inv);
 
     let mut t = [0u32; N_LIMBS_256];
@@ -143,8 +146,9 @@ pub(super) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64
         Some([x, _]) => x,    // Extract x-coordinate from R'
     };
 
-    // Compare: r' ≡ r (mod n)
+    // t <- r' (mod n)
     modadd_256(r_prime, &ZERO, &Secp256r1::N, &mut t);
+    // Verify: r' ≡ r (mod n)
     t == r
 }
 
@@ -163,10 +167,13 @@ const fn const_affine_point<C>(coords: [[u32; N_LIMBS_256]; 2]) -> AffinePoint<N
 
 #[cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))]
 mod host_impl {
+    use super::*;
     use crate::crypto::{LIMB_BYTES, be_bytes_to_limbs, limbs_to_be_bytes};
     use ark_ec::CurveGroup;
     use ark_ff::{AdditiveGroup, BigInteger, PrimeField};
     use ark_secp256r1::{Affine, Fq, Projective};
+
+    const CURVE_PARAMS: [[u32; 8]; 3] = [Secp256r1::PRIME, Secp256r1::A, Secp256r1::B];
 
     fn limbs_to_fq(limbs: &[u32; 8]) -> Fq {
         let bytes = limbs_to_be_bytes(limbs, 8 * LIMB_BYTES);
@@ -178,24 +185,26 @@ mod host_impl {
         be_bytes_to_limbs(&bytes)
     }
 
+    fn ec_double(a: &[[u32; 8]; 2], curve: &[[u32; 8]; 3], res: &mut [[u32; 8]; 2]) {
+        assert_eq!(curve, &CURVE_PARAMS); // this host implementation is only for secp256r1
+        let a = Affine::new(limbs_to_fq(&a[0]), limbs_to_fq(&a[1]));
+        let double = Projective::from(a).double().into_affine();
+        res[0] = fq_to_limbs(double.x);
+        res[1] = fq_to_limbs(double.y);
+    }
+
     fn ec_add(
         a: &[[u32; 8]; 2],
         b: &[[u32; 8]; 2],
-        _curve: &[[u32; 8]; 3], // ignored, using ark_secp256r1
+        curve: &[[u32; 8]; 3],
         res: &mut [[u32; 8]; 2],
     ) {
+        assert_eq!(curve, &CURVE_PARAMS); // this host implementation is only for secp256r1
         let a = Affine::new(limbs_to_fq(&a[0]), limbs_to_fq(&a[1]));
         let b = Affine::new(limbs_to_fq(&b[0]), limbs_to_fq(&b[1]));
         let sum = (Projective::from(a) + Projective::from(b)).into_affine();
         res[0] = fq_to_limbs(sum.x);
         res[1] = fq_to_limbs(sum.y);
-    }
-
-    fn ec_double(a: &[[u32; 8]; 2], _curve: &[[u32; 8]; 3], res: &mut [[u32; 8]; 2]) {
-        let a = Affine::new(limbs_to_fq(&a[0]), limbs_to_fq(&a[1]));
-        let double = Projective::from(a).double().into_affine();
-        res[0] = fq_to_limbs(double.x);
-        res[1] = fq_to_limbs(double.y);
     }
 
     #[unsafe(no_mangle)]
@@ -221,5 +230,36 @@ mod host_impl {
     ) {
         let res = &mut *a4.cast::<[[u32; 8]; 2]>().cast_mut();
         ec_add(&*a1.cast(), &*a2.cast(), &*a3.cast(), res);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use alloy_primitives::hex;
+
+    #[test]
+    fn g_const_layout() {
+        let qx = be_bytes_to_limbs(&hex!(
+            "0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"
+        ));
+        let qy = be_bytes_to_limbs(&hex!(
+            "0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5"
+        ));
+        assert_eq!(Secp256r1::G, AffinePoint::new_unchecked(qx, qy));
+    }
+
+    #[test]
+    fn satisfies_curve_equation_valid() {
+        let [gx, gy] = Secp256r1::G.as_u32s().unwrap();
+        assert!(Secp256r1::satisfies_curve_equation(gx, gy));
+    }
+
+    #[test]
+    fn satisfies_curve_equation_invalid() {
+        let [gx, gy] = Secp256r1::G.as_u32s().unwrap();
+        let mut bad_gy = *gy;
+        bad_gy[0] ^= 1; // flip one bit
+        assert!(!Secp256r1::satisfies_curve_equation(gx, &bad_gy));
     }
 }

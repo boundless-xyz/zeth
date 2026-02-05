@@ -12,9 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! R0VM-optimized crypto provider for REVM precompiles.
-
-#[cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))]
+#[cfg(all(feature = "r0vm", not(all(target_os = "zkvm", target_vendor = "risc0"))))]
 mod host_impl;
 mod modexp;
 mod p256;
@@ -27,13 +25,20 @@ use host_impl::*;
 #[cfg(all(target_os = "zkvm", target_vendor = "risc0"))]
 use risc0_bigint2::field::*;
 
+/// Bytes per limb.
 const LIMB_BYTES: usize = size_of::<u32>();
 
-/// R0VM-optimized crypto provider for REVM precompiles.
+/// R0VM-optimized [`Crypto`] provider for REVM precompiles.
+///
+/// Accelerates:
+/// - `modexp` (EIP-198)
+/// - `secp256r1_verify_signature` (EIP-7951)
 #[derive(Debug, Clone, Default)]
 pub struct R0vmCrypto;
 
-/// Installs the custom R0VM crypto provider globally.
+/// Installs the R0VM crypto provider globally.
+///
+/// Returns `true` if installed, `false` if a provider was already set.
 #[inline]
 pub fn install_r0vm_crypto() -> bool {
     install_crypto(R0vmCrypto)
@@ -102,9 +107,15 @@ fn limbs_to_be_bytes<const N: usize>(arr: &[u32; N], len: usize) -> Vec<u8> {
     bytes
 }
 
-/// Returns true if lhs < rhs (little-endian limb arrays).
+/// Returns true if lhs < rhs as little-endian integers. Unlike Rust's `<`, compares from most
+/// significant limb.
 fn is_less<const N: usize>(lhs: &[u32; N], rhs: &[u32; N]) -> bool {
-    lhs.iter().rev().cmp(rhs.iter().rev()) == std::cmp::Ordering::Less
+    for i in (0..N).rev() {
+        if lhs[i] != rhs[i] {
+            return lhs[i] < rhs[i];
+        }
+    }
+    false
 }
 
 #[cfg(test)]
@@ -118,17 +129,12 @@ mod tests {
     #[case::zero_exp("2a", "00", "03e8", 1)]
     #[case::modulus_one("2a", "0a", "01", 0)]
     #[case::zero_modulus("0a", "02", "00", 0)]
-    #[case::large_base(
+    #[case::base_gt_mod("0400", "01", "03e8", 24)]
+    #[case::base_overflows_limbs(
         "010000000000000000000000000000000000000000000000000000000000000000",
         "01",
         "03",
         1
-    )]
-    #[case::base_gt_mod(
-        "fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f",
-        "01",
-        "03e8",
-        663
     )]
     fn modexp_edge(#[case] b: Bytes, #[case] e: Bytes, #[case] m: Bytes, #[case] expected: u64) {
         let result = R0vmCrypto.modexp(&b, &e, &m).unwrap();
