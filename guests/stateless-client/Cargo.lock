@@ -1179,7 +1179,7 @@ source = "git+https://github.com/risc0/blst?tag=v0.3.15-risczero.1#3d1833ff0c245
 dependencies = [
  "cc",
  "glob",
- "risc0-bigint2 1.4.13",
+ "risc0-bigint2",
  "threadpool",
  "zeroize",
 ]
@@ -2726,7 +2726,7 @@ dependencies = [
  "ecdsa",
  "elliptic-curve",
  "once_cell",
- "risc0-bigint2 1.4.13",
+ "risc0-bigint2",
  "serdect",
  "sha2",
 ]
@@ -4543,17 +4543,7 @@ dependencies = [
 
 [[package]]
 name = "risc0-bigint2"
-version = "1.4.12"
-dependencies = [
- "include_bytes_aligned",
- "stability",
-]
-
-[[package]]
-name = "risc0-bigint2"
 version = "1.4.13"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "af3997ed5c8a35afd2fa39055f1b841e19571379e55ee634a06c41d7b924052d"
 dependencies = [
  "include_bytes_aligned",
  "stability",
@@ -5322,6 +5312,7 @@ dependencies = [
  "blst",
  "c-kzg",
  "revm",
+ "risc0-bigint2",
  "risc0-zkvm",
  "sha2",
  "substrate-bn",
@@ -5374,7 +5365,7 @@ dependencies = [
  "crypto-bigint",
  "lazy_static",
  "rand 0.8.5",
- "risc0-bigint2 1.4.13",
+ "risc0-bigint2",
  "rustc-hex",
 ]
 
@@ -6410,7 +6401,7 @@ dependencies = [
  "reth-primitives-traits",
  "reth-stateless",
  "reth-trie-common",
- "risc0-bigint2 1.4.12",
+ "risc0-bigint2",
  "risc0-ethereum-trie",
  "serde",
  "serde_with",

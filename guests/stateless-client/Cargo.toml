@@ -15,6 +15,7 @@ blst = { version = "=0.3.15" }
 c-kzg = { version = "=2.1.5" }
 revm = { version = "*", default-features = false, features = ["blst", "bn", "c-kzg"] }
 risc0-zkvm = { path = "../../risc0/risc0/zkvm" }
+risc0-bigint2 = { path = "../../risc0/risc0/bigint2" }
 sha2 = { version = "=0.10.9" }
 substrate-bn = { version = "=0.6.0" }
 tiny-keccak = { version = "=2.0.2" }
@@ -25,6 +26,7 @@ zeth-core = { path = "../../crates/core", features = ["r0vm"] }
 unsafe-pre-merge = ["zeth-core/unsafe-pre-merge"]
 
 [patch.crates-io]
+risc0-bigint2 = { path = "../../risc0/risc0/bigint2" }
 blst = { git = "https://github.com/risc0/blst", tag = "v0.3.15-risczero.1" }
 c-kzg = { git = "https://github.com/risc0/c-kzg-4844", tag = "v2.1.5-risczero.0" }
 crypto-bigint = { git = "https://github.com/risc0/RustCrypto-crypto-bigint", tag = "v0.5.5-risczero.0" }
