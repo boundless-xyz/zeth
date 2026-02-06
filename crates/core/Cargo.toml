@@ -27,6 +27,7 @@ reth-stateless = { workspace = true }
 reth-trie-common = { workspace = true }
 risc0-bigint2 = { workspace = true, optional = true }
 risc0-ethereum-trie = { workspace = true }
+risc0-zkp = { workspace = true }
 serde = { workspace = true }
 serde_with = { workspace = true }
 
