@@ -16,8 +16,8 @@ def build():
 
 
 def run_trace(file_path, output_dir):
-    # cache/input_0x1234.json -> 0x1234
-    block_hash = os.path.basename(file_path).replace("input_", "").replace(".json", "")
+    # cache/input_0x1234.v2.json -> 0x1234
+    block_hash = os.path.basename(file_path).replace("input_", "").replace(".v2.json", "")
 
     # Create a unique path inside the temporary directory
     trace_file = os.path.join(output_dir, f"trace_{block_hash}.json.gz")
@@ -41,11 +41,23 @@ def run_trace(file_path, output_dir):
 def analyze_traces(trace_files, output_csv):
     print("Analyzing trace data...")
 
-    data = defaultdict(list)
-    for filename in trace_files:
+    cycle_data = defaultdict(lambda: array('Q'))
+    gas_data = defaultdict(lambda: array('Q'))
+
+    for i, filename in enumerate(trace_files, 1):
+        print(f"  Loading trace {i}/{len(trace_files)}: {os.path.basename(filename)}")
         with gzip.open(filename, "rb") as f:
-            for name, entries in json.load(f).items():
-                data[name].extend((c, g) for c, g in entries)
+            trace = json.load(f)
+
+        for name, entries in trace.items():
+            cycles = cycle_data[name]
+            gas = gas_data[name]
+            for c, g in entries:
+                cycles.append(c)
+                gas.append(g)
+
+        # Free the large decoded JSON dict before loading the next file
+        del trace
 
     with open(output_csv, "w") as f:
         writer = csv.writer(f)
@@ -58,27 +70,35 @@ def analyze_traces(trace_files, output_csv):
             "min cycles",
             "median cycles",
             "max cycles",
-            "total cycles"
+            "total cycles",
         ]
         writer.writerow(header)
 
-        for name, traces in data.items():
-            cycle_list = [c for c, _ in traces]
-            cpg_list = [c // g for c, g in traces if g > 0]
-            if not cpg_list:
-                continue
+        for name in cycle_data:
+            cycle_arr = cycle_data[name]
+            gas_arr = gas_data[name]
+
+            cpg_list = sorted(c // g for c, g in zip(cycle_arr, gas_arr) if g > 0)
+            cycle_list = sorted(cycle_arr)
+
+            def median_sorted(s):
+                n = len(s)
+                mid = n // 2
+                return (s[mid - 1] + s[mid]) // 2 if n % 2 == 0 else s[mid]
+
+            cpg_min, cpg_med, cpg_max = (cpg_list[0], median_sorted(cpg_list), cpg_list[-1]) if cpg_list else ("N/A", "N/A", "N/A")
 
             writer.writerow(
                 [
                     name,
-                    len(cpg_list),
-                    min(cpg_list),
-                    int(statistics.median(cpg_list)),
-                    max(cpg_list),
-                    min(cycle_list),
-                    int(statistics.median(cycle_list)),
-                    max(cycle_list),
-                    sum(cycle_list)
+                    len(cycle_arr),
+                    cpg_min,
+                    cpg_med,
+                    cpg_max,
+                    sorted_cycles[0],
+                    median_sorted(sorted_cycles),
+                    sorted_cycles[-1],
+                    sum(cycle_arr),
                 ]
             )
 
@@ -90,7 +110,7 @@ def main():
 
     build()
 
-    files = glob.glob("cache/input_0x*.json")
+    files = glob.glob("cache/input_0x*.v2.json")
     print(f"Profiling {len(files)} blocks with {args.jobs} jobs...")
 
     with tempfile.TemporaryDirectory() as temp_dir:
