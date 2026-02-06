@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use super::{LIMB_BYTES, be_bytes_to_limbs, biguint_to_limbs, is_less, limbs_to_be_bytes};
+use super::{LIMB_BYTES, be_bytes_to_limbs, biguint_to_limbs, is_less};
 use num_bigint::BigUint;
 
 trait BitAccess {
@@ -96,4 +96,18 @@ where
     assert!(is_less(curr, &mod_arr));
 
     limbs_to_be_bytes(curr, modulus.len())
+}
+
+fn limbs_to_be_bytes<const N: usize>(arr: &[u32; N], len: usize) -> Vec<u8> {
+    let mut bytes = Vec::with_capacity(len);
+    if len > 0 {
+        let idx = (len - 1) / LIMB_BYTES;
+        let skip = (idx + 1) * LIMB_BYTES - len;
+
+        bytes.extend_from_slice(&arr[idx].to_be_bytes()[skip..]);
+        for i in (0..idx).rev() {
+            bytes.extend_from_slice(&arr[i].to_be_bytes());
+        }
+    }
+    bytes
 }

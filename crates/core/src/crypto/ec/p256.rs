@@ -16,83 +16,46 @@
 //!
 //! Implements [EIP-7951](https://eips.ethereum.org/EIPS/eip-7951).
 
-use super::{be_bytes_to_limbs, is_less, modadd_256, modmul_256, unchecked};
-use risc0_bigint2::ec::{AffinePoint, Curve, EC_256_WIDTH_WORDS, WeierstrassCurve};
-
-/// Number of 32-bit limbs for 256-bit values.
-const N_LIMBS_256: usize = EC_256_WIDTH_WORDS;
+use super::{
+    super::{be_bytes_to_limbs, is_less, modadd_256, modmul_256, unchecked},
+    Curve, const_affine_point_256,
+};
+use risc0_bigint2::ec::{AffinePoint, Curve as R0vmCurve, EC_256_WIDTH_WORDS, WeierstrassCurve};
 
 /// The zero 256-bit value.
-const ZERO: [u32; N_LIMBS_256] = [0; N_LIMBS_256];
+const ZERO: [u32; EC_256_WIDTH_WORDS] = [0; EC_256_WIDTH_WORDS];
 
 /// The secp256r1 (P-256) curve.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Secp256r1 {}
 
 impl Secp256r1 {
-    /// Base field modulus
-    const PRIME: [u32; N_LIMBS_256] = [
-        0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000001,
-        0xFFFFFFFF,
-    ];
-    /// Curve coefficient a
-    const A: [u32; N_LIMBS_256] = [
-        0xFFFFFFFC, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000, 0x00000000, 0x00000000, 0x00000001,
-        0xFFFFFFFF,
-    ];
-    /// Curve coefficient b
-    const B: [u32; N_LIMBS_256] = [
-        0x27D2604B, 0x3BCE3C3E, 0xCC53B0F6, 0x651D06B0, 0x769886BC, 0xB3EBBD55, 0xAA3A93E7,
-        0x5AC635D8,
-    ];
-    /// Curve order
-    const N: [u32; N_LIMBS_256] = [
-        0xFC632551, 0xF3B9CAC2, 0xA7179E84, 0xBCE6FAAD, 0xFFFFFFFF, 0xFFFFFFFF, 0x00000000,
-        0xFFFFFFFF,
-    ];
-    /// Base point
-    const G: AffinePoint<N_LIMBS_256, Self> = const_affine_point([
-        [
-            0xd898c296, 0xf4a13945, 0x2deb33a0, 0x77037d81, 0x63a440f2, 0xf8bce6e5, 0xe12c4247,
-            0x6b17d1f2,
-        ],
-        [
-            0x37bf51f5, 0xcbb64068, 0x6b315ece, 0x2bce3357, 0x7c0f9e16, 0x8ee7eb4a, 0xfe1a7f9b,
-            0x4fe342e2,
-        ],
+    /// Group order n
+    const N: [u32; EC_256_WIDTH_WORDS] =
+        hex_limbs!("0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551");
+    /// Base point G
+    const G: AffinePoint<EC_256_WIDTH_WORDS, Self> = const_affine_point_256([
+        hex_limbs!("0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"),
+        hex_limbs!("0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5"),
     ]);
-
-    /// Check if point `(x,y)` satisfies the curve equation `y^2 = x^3 + ax + b (mod p)`.
-    fn satisfies_curve_equation(x: &[u32; N_LIMBS_256], y: &[u32; N_LIMBS_256]) -> bool {
-        let mut t1 = [0u32; N_LIMBS_256];
-        let mut t2 = [0u32; N_LIMBS_256];
-
-        // unchecked: final equality is reduction-agnostic
-        // t1 <- x^2
-        unchecked::modmul_256(x, x, &Self::PRIME, &mut t1);
-        // t2 <- x^2 + a
-        unchecked::modadd_256(&t1, &Self::A, &Self::PRIME, &mut t2);
-        // t1 <- x(x^2 + a)
-        unchecked::modmul_256(&t2, x, &Self::PRIME, &mut t1);
-        // t2 <- (x^3 + ax) + b [RHS]
-        unchecked::modadd_256(&t1, &Self::B, &Self::PRIME, &mut t2);
-        // t1 <- y^2 [LHS]
-        unchecked::modmul_256(y, y, &Self::PRIME, &mut t1);
-
-        t1 == t2
-    }
 }
 
-impl Curve<N_LIMBS_256> for Secp256r1 {
-    const CURVE: &'static WeierstrassCurve<N_LIMBS_256> =
-        &WeierstrassCurve::<N_LIMBS_256>::new(Self::PRIME, Self::A, Self::B);
+impl Curve<EC_256_WIDTH_WORDS> for Secp256r1 {
+    const PRIME: [u32; EC_256_WIDTH_WORDS] =
+        hex_limbs!("0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff");
+    const A: [u32; EC_256_WIDTH_WORDS] =
+        hex_limbs!("0xffffffff00000001000000000000000000000000fffffffffffffffffffffffc");
+    const B: [u32; EC_256_WIDTH_WORDS] =
+        hex_limbs!("0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b");
+}
+
+impl R0vmCurve<EC_256_WIDTH_WORDS> for Secp256r1 {
+    const CURVE: &'static WeierstrassCurve<EC_256_WIDTH_WORDS> =
+        &WeierstrassCurve::new(Self::PRIME, Self::A, Self::B);
 }
 
 /// Verifies an ECDSA signature over the secp256r1 curve.
-pub(super) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64]) -> bool {
-    // Message Hash (h)
-    let h = be_bytes_to_limbs(msg_hash);
-
+pub(crate) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64]) -> bool {
     // Signature (r, s)
     let r = be_bytes_to_limbs(&sig[0..32]);
     let s = be_bytes_to_limbs(&sig[32..64]);
@@ -102,25 +65,24 @@ pub(super) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64
     }
 
     // Public Key (x, y)
-    let qx = be_bytes_to_limbs(&pk[0..32]);
-    let qy = be_bytes_to_limbs(&pk[32..64]);
-    // Validate: 0 <= qx < p and 0 <= qy < p
-    if !is_less(&qx, &Secp256r1::PRIME) || !is_less(&qy, &Secp256r1::PRIME) {
-        return false;
-    }
-    // Validate: (qx, qy) satisfies the curve equation; this implies (qx, qy) != (0, 0)
-    if !Secp256r1::satisfies_curve_equation(&qx, &qy) {
-        return false;
-    }
+    let q_pt = match Secp256r1::decode_point(pk) {
+        // Validate: 0 <= qx < p and 0 <= qy < p
+        // Validate: (qx, qy) satisfies the curve equation
+        None => return false,
+        // Validate: (qx, qy) != (0, 0)
+        Some(AffinePoint::IDENTITY) => return false,
+        Some(pt) => pt,
+    };
 
-    let q_pt = AffinePoint::new_unchecked(qx, qy);
+    // Message Hash (h)
+    let h = be_bytes_to_limbs(msg_hash);
 
-    let mut s_inv = [0u32; N_LIMBS_256];
+    let mut s_inv = [0u32; EC_256_WIDTH_WORDS];
     // s_inv <- s^(-1) (mod n)
     // unchecked: feeds checked modmul below
     unchecked::modinv_256(&s, &Secp256r1::N, &mut s_inv);
 
-    let mut t = [0u32; N_LIMBS_256];
+    let mut t = [0u32; EC_256_WIDTH_WORDS];
 
     // Recover the random point used during signing:
     // R' = [h * s_inv]G + [r * s_inv]Q
@@ -152,23 +114,10 @@ pub(super) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64
     t == r
 }
 
-/// Constructs an [`AffinePoint`] in const context.
-///
-/// Workaround: `AffinePoint::new_unchecked` is not const in `risc0_bigint2`.
-const fn const_affine_point<C>(coords: [[u32; N_LIMBS_256]; 2]) -> AffinePoint<N_LIMBS_256, C> {
-    #[allow(unused)]
-    struct Raw {
-        buffer: [[u32; N_LIMBS_256]; 2],
-        identity: bool,
-    }
-    // SAFETY: AffinePoint has same layout as Raw; PhantomData<C> is ZST
-    unsafe { std::mem::transmute(Raw { buffer: coords, identity: false }) }
-}
-
 #[cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))]
 mod host_impl {
     use super::*;
-    use crate::crypto::{LIMB_BYTES, be_bytes_to_limbs, limbs_to_be_bytes};
+    use crate::crypto::{LIMB_BYTES, be_bytes_to_limbs, limbs_into_be_bytes};
     use ark_ec::CurveGroup;
     use ark_ff::{AdditiveGroup, BigInteger, PrimeField};
     use ark_secp256r1::{Affine, Fq, Projective};
@@ -176,7 +125,8 @@ mod host_impl {
     const CURVE_PARAMS: [[u32; 8]; 3] = [Secp256r1::PRIME, Secp256r1::A, Secp256r1::B];
 
     fn limbs_to_fq(limbs: &[u32; 8]) -> Fq {
-        let bytes = limbs_to_be_bytes(limbs, 8 * LIMB_BYTES);
+        let mut bytes = [0u8; 8 * LIMB_BYTES];
+        limbs_into_be_bytes(limbs, &mut bytes);
         Fq::from_be_bytes_mod_order(&bytes)
     }
 

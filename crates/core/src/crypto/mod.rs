@@ -12,11 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/// Converts a hex literal into a little-endian limb array at compile time.
+macro_rules! hex_limbs {
+    ($hex:literal) => {{
+        const BYTES: &[u8] = &alloy_primitives::hex!($hex);
+        const { assert!(BYTES.len() % 4 == 0, "Hex string must be a multiple of 4 bytes") };
+        let mut limbs = [0u32; BYTES.len() / 4];
+        let mut i = 0;
+        while i < BYTES.len() / 4 {
+            let j = BYTES.len() - (i + 1) * 4;
+            limbs[i] = u32::from_be_bytes([BYTES[j], BYTES[j + 1], BYTES[j + 2], BYTES[j + 3]]);
+            i += 1;
+        }
+        limbs
+    }};
+}
+
+#[cfg(any(test, all(target_os = "zkvm", target_vendor = "risc0")))]
+mod ec;
 #[cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))]
 mod host_impl;
 mod modexp;
-#[cfg(any(test, all(target_os = "zkvm", target_vendor = "risc0")))]
-mod p256;
 
 use num_bigint::BigUint;
 use reth_evm::revm::precompile::{Crypto, DefaultCrypto, PrecompileError, install_crypto};
@@ -33,6 +49,7 @@ const LIMB_BYTES: usize = size_of::<u32>();
 ///
 /// Accelerates:
 /// - `modexp` (EIP-198)
+/// - `bn254_g1_add` / `bn254_g1_mul` (EIP-196)
 /// - `secp256r1_verify_signature` (EIP-7951)
 #[derive(Debug, Clone, Default)]
 pub struct R0vmCrypto;
@@ -63,8 +80,20 @@ impl Crypto for R0vmCrypto {
 
     #[cfg(any(test, all(target_os = "zkvm", target_vendor = "risc0")))]
     #[inline]
+    fn bn254_g1_add(&self, p1: &[u8], p2: &[u8]) -> Result<[u8; 64], PrecompileError> {
+        ec::bn254::add(p1, p2)
+    }
+
+    #[cfg(any(test, all(target_os = "zkvm", target_vendor = "risc0")))]
+    #[inline]
+    fn bn254_g1_mul(&self, point: &[u8], scalar: &[u8]) -> Result<[u8; 64], PrecompileError> {
+        ec::bn254::mul(point, scalar)
+    }
+
+    #[cfg(any(test, all(target_os = "zkvm", target_vendor = "risc0")))]
+    #[inline]
     fn secp256r1_verify_signature(&self, msg: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64]) -> bool {
-        p256::verify_signature(msg, sig, pk)
+        ec::p256::verify_signature(msg, sig, pk)
     }
 }
 
@@ -94,19 +123,11 @@ fn be_bytes_to_limbs<const N: usize>(bytes: &[u8]) -> [u32; N] {
     arr
 }
 
-/// Converts a little-endian limb array to big-endian bytes of specified length.
-fn limbs_to_be_bytes<const N: usize>(arr: &[u32; N], len: usize) -> Vec<u8> {
-    let mut bytes = Vec::with_capacity(len);
-    if len > 0 {
-        let idx = (len - 1) / LIMB_BYTES;
-        let skip = (idx + 1) * LIMB_BYTES - len;
-
-        bytes.extend_from_slice(&arr[idx].to_be_bytes()[skip..]);
-        for i in (0..idx).rev() {
-            bytes.extend_from_slice(&arr[i].to_be_bytes());
-        }
+fn limbs_into_be_bytes<const N: usize>(arr: &[u32; N], output: &mut [u8]) {
+    assert!(output.len() >= N * LIMB_BYTES);
+    for (dst, src) in output.rchunks_exact_mut(LIMB_BYTES).zip(arr.iter()) {
+        dst.copy_from_slice(&src.to_be_bytes())
     }
-    bytes
 }
 
 /// Returns true if lhs < rhs as little-endian integers. Unlike Rust's `<`, compares from most

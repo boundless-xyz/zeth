@@ -48,6 +48,10 @@ pub(crate) fn modadd_256(a: &[u32; 8], b: &[u32; 8], m: &[u32; 8], res: &mut [u3
     modadd(a, b, m, res)
 }
 
+pub(crate) fn modadd_384(a: &[u32; 12], b: &[u32; 12], m: &[u32; 12], res: &mut [u32; 12]) {
+    modadd(a, b, m, res)
+}
+
 pub(crate) fn modinv_256(a: &[u32; 8], m: &[u32; 8], res: &mut [u32; 8]) {
     modinv(a, m, res)
 }
