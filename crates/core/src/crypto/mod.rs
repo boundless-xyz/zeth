@@ -29,6 +29,7 @@ macro_rules! hex_limbs {
 }
 
 mod ec;
+#[cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))]
 mod host_impl;
 mod modexp;
 
