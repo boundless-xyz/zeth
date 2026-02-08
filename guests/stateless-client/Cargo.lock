@@ -1787,6 +1787,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
 
 [[package]]
+name = "ec-generic"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd52b0f4365ed46dcb86449c755f9b7f459ed119fa453915ba4ba2c5cb75ef4e"
+dependencies = [
+ "num-bigint",
+]
+
+[[package]]
 name = "ecdsa"
 version = "0.16.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6337,6 +6346,7 @@ version = "0.3.0"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
+ "ec-generic",
  "num-bigint",
  "reth-chainspec",
  "reth-errors",

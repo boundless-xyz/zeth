@@ -12,16 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use super::{limbs_into_be_bytes, unchecked};
-use crate::crypto::{LIMB_BYTES, be_bytes_to_limbs, is_less};
-use risc0_bigint2::ec::{AffinePoint, EC_256_WIDTH_WORDS, EC_384_WIDTH_WORDS};
-
 pub(super) mod bn254;
 pub(super) mod p256;
 
-trait Curve<const WIDTH: usize>
+use super::{field::unchecked, limbs_into_be_bytes};
+use crate::crypto::{LIMB_BYTES, be_bytes_to_limbs, is_less};
+
+#[cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))]
+use super::host_impl::ec::*;
+#[cfg(all(target_os = "zkvm", target_vendor = "risc0"))]
+use risc0_bigint2::ec::*;
+
+/// Extends [`Curve`] with short Weierstrass curve parameters and point validation.
+trait CurveExt<const WIDTH: usize>: Curve<WIDTH>
 where
-    [u32; WIDTH]: Field,
+    [u32; WIDTH]: ModOps,
 {
     /// Base field modulus p
     const PRIME: [u32; WIDTH];
@@ -30,30 +35,9 @@ where
     /// Curve coefficient b
     const B: [u32; WIDTH];
 
-    /// Check if point `(x,y)` satisfies the curve equation `y^2 = x^3 + ax + b (mod p)`.
+    /// Decodes an affine point from big-endian encoded input.
     #[inline]
-    fn satisfies_curve_equation(x: &[u32; WIDTH], y: &[u32; WIDTH]) -> bool {
-        let mut t1 = [0u32; WIDTH];
-        let mut t2 = [0u32; WIDTH];
-
-        // unchecked: final equality is reduction-agnostic
-        // t1 <- x^2
-        <[u32; WIDTH]>::unchecked_modmul(x, x, &Self::PRIME, &mut t1);
-        // t2 <- x^2 + a
-        <[u32; WIDTH]>::unchecked_moadd(&t1, &Self::A, &Self::PRIME, &mut t2);
-        // t1 <- x(x^2 + a)
-        <[u32; WIDTH]>::unchecked_modmul(&t2, x, &Self::PRIME, &mut t1);
-        // t2 <- (x^3 + ax) + b [RHS]
-        <[u32; WIDTH]>::unchecked_moadd(&t1, &Self::B, &Self::PRIME, &mut t2);
-        // t1 <- y^2 [LHS]
-        <[u32; WIDTH]>::unchecked_modmul(y, y, &Self::PRIME, &mut t1);
-
-        t1 == t2
-    }
-
-    /// Parses a point big-endian encoded input.
-    #[inline]
-    fn decode_point(input: &[u8]) -> Option<AffinePoint<WIDTH, Self>>
+    fn bytes_to_affine(input: &[u8]) -> Option<AffinePoint<WIDTH, Self>>
     where
         Self: Sized,
     {
@@ -77,14 +61,36 @@ where
 
         Some(AffinePoint::new_unchecked(x, y))
     }
+
+    /// Check if point `(x,y)` satisfies the curve equation `y^2 = x^3 + ax + b (mod p)`.
+    #[inline]
+    fn satisfies_curve_equation(x: &[u32; WIDTH], y: &[u32; WIDTH]) -> bool {
+        let mut t1 = [0u32; WIDTH];
+        let mut t2 = [0u32; WIDTH];
+
+        // unchecked: final equality is reduction-agnostic
+        // t1 <- x^2
+        <[u32; WIDTH]>::unchecked_modmul(x, x, &Self::PRIME, &mut t1);
+        // t2 <- x^2 + a
+        <[u32; WIDTH]>::unchecked_moadd(&t1, &Self::A, &Self::PRIME, &mut t2);
+        // t1 <- x(x^2 + a)
+        <[u32; WIDTH]>::unchecked_modmul(&t2, x, &Self::PRIME, &mut t1);
+        // t2 <- (x^3 + ax) + b [RHS]
+        <[u32; WIDTH]>::unchecked_moadd(&t1, &Self::B, &Self::PRIME, &mut t2);
+        // t1 <- y^2 [LHS]
+        <[u32; WIDTH]>::unchecked_modmul(y, y, &Self::PRIME, &mut t1);
+
+        t1 == t2
+    }
 }
 
-trait Field {
+/// Modular addition and multiplication dispatched by limb-array width.
+trait ModOps {
     fn unchecked_moadd(a: &Self, b: &Self, m: &Self, res: &mut Self);
     fn unchecked_modmul(a: &Self, b: &Self, m: &Self, res: &mut Self);
 }
 
-impl Field for [u32; EC_256_WIDTH_WORDS] {
+impl ModOps for [u32; EC_256_WIDTH_WORDS] {
     fn unchecked_moadd(a: &Self, b: &Self, m: &Self, res: &mut Self) {
         unchecked::modadd_256(a, b, m, res);
     }
@@ -93,7 +99,7 @@ impl Field for [u32; EC_256_WIDTH_WORDS] {
     }
 }
 
-impl Field for [u32; EC_384_WIDTH_WORDS] {
+impl ModOps for [u32; EC_384_WIDTH_WORDS] {
     fn unchecked_moadd(a: &Self, b: &Self, m: &Self, res: &mut Self) {
         unchecked::modadd_384(a, b, m, res);
     }
@@ -105,7 +111,7 @@ impl Field for [u32; EC_384_WIDTH_WORDS] {
 /// Constructs an [`AffinePoint`] in const context.
 ///
 /// Workaround: `AffinePoint::new_unchecked` is not const in `risc0_bigint2`.
-const fn const_affine_point_256<C>(
+const fn const_new_affine_256<C: Curve<EC_256_WIDTH_WORDS>>(
     coords: [[u32; EC_256_WIDTH_WORDS]; 2],
 ) -> AffinePoint<EC_256_WIDTH_WORDS, C> {
     #[allow(unused)]
@@ -117,9 +123,11 @@ const fn const_affine_point_256<C>(
     unsafe { std::mem::transmute(Raw { buffer: coords, identity: false }) }
 }
 
-/// Encodes a point.
-#[inline]
-fn encode_point<const WIDTH: usize, C>(point: AffinePoint<WIDTH, C>, output: &mut [u8]) {
+/// Encodes an affine point as big-endian bytes.
+fn affine_to_bytes<const WIDTH: usize, C: Curve<WIDTH>>(
+    point: AffinePoint<WIDTH, C>,
+    output: &mut [u8],
+) {
     assert_eq!(output.len(), 2 * WIDTH * LIMB_BYTES);
     match point.as_u32s() {
         None => output.fill(0),

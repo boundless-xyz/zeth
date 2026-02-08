@@ -16,61 +16,63 @@
 //!
 //! Implements [EIP-196](https://eips.ethereum.org/EIPS/eip-196).
 
-use super::{super::be_bytes_to_limbs, Curve, encode_point};
-use reth_evm::revm::precompile::PrecompileError;
-use risc0_bigint2::ec::{AffinePoint, Curve as R0vmCurve, EC_256_WIDTH_WORDS, WeierstrassCurve};
+use super::{AffinePoint, Curve, CurveExt, WeierstrassCurve, affine_to_bytes};
+use crate::crypto::{LIMB_BITS, be_bytes_to_limbs};
+
+/// Limbs needed to represent the BN254 curve.
+const EC_LIMBS: usize = 256 / LIMB_BITS;
 
 /// The BN254 (alt_bn128) curve.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Bn254 {}
 
-impl Curve<EC_256_WIDTH_WORDS> for Bn254 {
-    const PRIME: [u32; EC_256_WIDTH_WORDS] =
+impl CurveExt<EC_LIMBS> for Bn254 {
+    const PRIME: [u32; EC_LIMBS] =
         hex_limbs!("0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd47");
-    const A: [u32; EC_256_WIDTH_WORDS] =
+    const A: [u32; EC_LIMBS] =
         hex_limbs!("0x0000000000000000000000000000000000000000000000000000000000000000");
-    const B: [u32; EC_256_WIDTH_WORDS] =
+    const B: [u32; EC_LIMBS] =
         hex_limbs!("0x0000000000000000000000000000000000000000000000000000000000000003");
 }
 
-impl R0vmCurve<EC_256_WIDTH_WORDS> for Bn254 {
-    const CURVE: &'static WeierstrassCurve<EC_256_WIDTH_WORDS> =
+impl Curve<EC_LIMBS> for Bn254 {
+    const CURVE: &'static WeierstrassCurve<EC_LIMBS> =
         &WeierstrassCurve::new(Self::PRIME, Self::A, Self::B);
 }
 
-/// BN254 point addition.
-pub(crate) fn add(a: &[u8], b: &[u8]) -> Result<[u8; 64], PrecompileError> {
-    let a = Bn254::decode_point(a).ok_or(PrecompileError::Bn254AffineGFailedToCreate)?;
-    let b = Bn254::decode_point(b).ok_or(PrecompileError::Bn254AffineGFailedToCreate)?;
+/// BN254 point addition. Returns `None` if either input is not a valid G1 point.
+pub(crate) fn add(a: &[u8], b: &[u8]) -> Option<[u8; 64]> {
+    let a = Bn254::bytes_to_affine(a)?;
+    let b = Bn254::bytes_to_affine(b)?;
 
     let mut sum = AffinePoint::IDENTITY;
     a.add(&b, &mut sum);
 
     let mut result = [0u8; 64];
-    encode_point(sum, &mut result);
-    Ok(result)
+    affine_to_bytes(sum, &mut result);
+    Some(result)
 }
 
-/// BN254 scalar multiplication.
-pub(crate) fn mul(p: &[u8], scalar: &[u8]) -> Result<[u8; 64], PrecompileError> {
-    let p = Bn254::decode_point(p).ok_or(PrecompileError::Bn254AffineGFailedToCreate)?;
-    let scalar = be_bytes_to_limbs::<EC_256_WIDTH_WORDS>(scalar);
+/// BN254 scalar multiplication. Returns `None` if the input is not a valid G1 point.
+pub(crate) fn mul(p: &[u8], scalar: &[u8]) -> Option<[u8; 64]> {
+    let p = Bn254::bytes_to_affine(p)?;
+    let scalar = be_bytes_to_limbs::<EC_LIMBS>(scalar);
 
     let mut prod = AffinePoint::IDENTITY;
     p.mul(&scalar, &mut prod);
 
     let mut result = [0u8; 64];
-    encode_point(prod, &mut result);
-    Ok(result)
+    affine_to_bytes(prod, &mut result);
+    Some(result)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::crypto::ec::const_affine_point_256;
+    use crate::crypto::ec::const_new_affine_256;
 
     // non-reduced (1,2)
-    const G: AffinePoint<EC_256_WIDTH_WORDS, Bn254> = const_affine_point_256([
+    const G: AffinePoint<EC_LIMBS, Bn254> = const_new_affine_256([
         hex_limbs!("0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd48"),
         hex_limbs!("0x30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd49"),
     ]);

@@ -16,14 +16,18 @@
 //!
 //! Implements [EIP-7951](https://eips.ethereum.org/EIPS/eip-7951).
 
-use super::{
-    super::{be_bytes_to_limbs, is_less, modadd_256, modmul_256, unchecked},
-    Curve, const_affine_point_256,
+use super::{AffinePoint, Curve, CurveExt, WeierstrassCurve, const_new_affine_256};
+use crate::crypto::{
+    LIMB_BITS, be_bytes_to_limbs,
+    field::{modadd_256, modmul_256, unchecked},
+    is_less,
 };
-use risc0_bigint2::ec::{AffinePoint, Curve as R0vmCurve, EC_256_WIDTH_WORDS, WeierstrassCurve};
+
+/// Limbs needed to represent the P-256 curve.
+const EC_LIMBS: usize = 256 / LIMB_BITS;
 
 /// The zero 256-bit value.
-const ZERO: [u32; EC_256_WIDTH_WORDS] = [0; EC_256_WIDTH_WORDS];
+const ZERO: [u32; EC_LIMBS] = [0; EC_LIMBS];
 
 /// The secp256r1 (P-256) curve.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -31,30 +35,30 @@ enum Secp256r1 {}
 
 impl Secp256r1 {
     /// Group order n
-    const N: [u32; EC_256_WIDTH_WORDS] =
+    const N: [u32; EC_LIMBS] =
         hex_limbs!("0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551");
     /// Base point G
-    const G: AffinePoint<EC_256_WIDTH_WORDS, Self> = const_affine_point_256([
+    const G: AffinePoint<EC_LIMBS, Self> = const_new_affine_256([
         hex_limbs!("0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296"),
         hex_limbs!("0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5"),
     ]);
 }
 
-impl Curve<EC_256_WIDTH_WORDS> for Secp256r1 {
-    const PRIME: [u32; EC_256_WIDTH_WORDS] =
+impl CurveExt<EC_LIMBS> for Secp256r1 {
+    const PRIME: [u32; EC_LIMBS] =
         hex_limbs!("0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff");
-    const A: [u32; EC_256_WIDTH_WORDS] =
+    const A: [u32; EC_LIMBS] =
         hex_limbs!("0xffffffff00000001000000000000000000000000fffffffffffffffffffffffc");
-    const B: [u32; EC_256_WIDTH_WORDS] =
+    const B: [u32; EC_LIMBS] =
         hex_limbs!("0x5ac635d8aa3a93e7b3ebbd55769886bc651d06b0cc53b0f63bce3c3e27d2604b");
 }
 
-impl R0vmCurve<EC_256_WIDTH_WORDS> for Secp256r1 {
-    const CURVE: &'static WeierstrassCurve<EC_256_WIDTH_WORDS> =
+impl Curve<EC_LIMBS> for Secp256r1 {
+    const CURVE: &'static WeierstrassCurve<EC_LIMBS> =
         &WeierstrassCurve::new(Self::PRIME, Self::A, Self::B);
 }
 
-/// Verifies an ECDSA signature over the secp256r1 curve.
+/// Verifies an ECDSA signature over the P-256 curve.
 pub(crate) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64]) -> bool {
     // Signature (r, s)
     let r = be_bytes_to_limbs(&sig[0..32]);
@@ -65,7 +69,7 @@ pub(crate) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64
     }
 
     // Public Key (x, y)
-    let q_pt = match Secp256r1::decode_point(pk) {
+    let q_pt = match Secp256r1::bytes_to_affine(pk) {
         // Validate: 0 <= qx < p and 0 <= qy < p
         // Validate: (qx, qy) satisfies the curve equation
         None => return false,
@@ -77,12 +81,12 @@ pub(crate) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64
     // Message Hash (h)
     let h = be_bytes_to_limbs(msg_hash);
 
-    let mut s_inv = [0u32; EC_256_WIDTH_WORDS];
+    let mut s_inv = [0u32; EC_LIMBS];
     // s_inv <- s^(-1) (mod n)
     // unchecked: feeds checked modmul below
     unchecked::modinv_256(&s, &Secp256r1::N, &mut s_inv);
 
-    let mut t = [0u32; EC_256_WIDTH_WORDS];
+    let mut t = [0u32; EC_LIMBS];
 
     // Recover the random point used during signing:
     // R' = [h * s_inv]G + [r * s_inv]Q
@@ -112,75 +116,6 @@ pub(crate) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64
     modadd_256(r_prime, &ZERO, &Secp256r1::N, &mut t);
     // Verify: r' ≡ r (mod n)
     t == r
-}
-
-#[cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))]
-mod host_impl {
-    use super::*;
-    use crate::crypto::{LIMB_BYTES, be_bytes_to_limbs, limbs_into_be_bytes};
-    use ark_ec::CurveGroup;
-    use ark_ff::{AdditiveGroup, BigInteger, PrimeField};
-    use ark_secp256r1::{Affine, Fq, Projective};
-
-    const CURVE_PARAMS: [[u32; 8]; 3] = [Secp256r1::PRIME, Secp256r1::A, Secp256r1::B];
-
-    fn limbs_to_fq(limbs: &[u32; 8]) -> Fq {
-        let mut bytes = [0u8; 8 * LIMB_BYTES];
-        limbs_into_be_bytes(limbs, &mut bytes);
-        Fq::from_be_bytes_mod_order(&bytes)
-    }
-
-    fn fq_to_limbs(f: Fq) -> [u32; 8] {
-        let bytes = f.into_bigint().to_bytes_be();
-        be_bytes_to_limbs(&bytes)
-    }
-
-    fn ec_double(a: &[[u32; 8]; 2], curve: &[[u32; 8]; 3], res: &mut [[u32; 8]; 2]) {
-        assert_eq!(curve, &CURVE_PARAMS); // this host implementation is only for secp256r1
-        let a = Affine::new(limbs_to_fq(&a[0]), limbs_to_fq(&a[1]));
-        let double = Projective::from(a).double().into_affine();
-        res[0] = fq_to_limbs(double.x);
-        res[1] = fq_to_limbs(double.y);
-    }
-
-    fn ec_add(
-        a: &[[u32; 8]; 2],
-        b: &[[u32; 8]; 2],
-        curve: &[[u32; 8]; 3],
-        res: &mut [[u32; 8]; 2],
-    ) {
-        assert_eq!(curve, &CURVE_PARAMS); // this host implementation is only for secp256r1
-        let a = Affine::new(limbs_to_fq(&a[0]), limbs_to_fq(&a[1]));
-        let b = Affine::new(limbs_to_fq(&b[0]), limbs_to_fq(&b[1]));
-        let sum = (Projective::from(a) + Projective::from(b)).into_affine();
-        res[0] = fq_to_limbs(sum.x);
-        res[1] = fq_to_limbs(sum.y);
-    }
-
-    #[unsafe(no_mangle)]
-    #[allow(unsafe_op_in_unsafe_fn)]
-    unsafe extern "C" fn sys_bigint2_3(
-        _blob_ptr: *const u8,
-        a1: *const u32,
-        a2: *const u32,
-        a3: *const u32,
-    ) {
-        let res = &mut *a3.cast::<[[u32; 8]; 2]>().cast_mut();
-        ec_double(&*a1.cast(), &*a2.cast(), res);
-    }
-
-    #[unsafe(no_mangle)]
-    #[allow(unsafe_op_in_unsafe_fn)]
-    unsafe extern "C" fn sys_bigint2_4(
-        _blob_ptr: *const u8,
-        a1: *const u32,
-        a2: *const u32,
-        a3: *const u32,
-        a4: *const u32,
-    ) {
-        let res = &mut *a4.cast::<[[u32; 8]; 2]>().cast_mut();
-        ec_add(&*a1.cast(), &*a2.cast(), &*a3.cast(), res);
-    }
 }
 
 #[cfg(test)]

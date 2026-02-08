@@ -28,9 +28,7 @@ macro_rules! hex_limbs {
     }};
 }
 
-#[cfg(any(test, all(target_os = "zkvm", target_vendor = "risc0")))]
 mod ec;
-#[cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))]
 mod host_impl;
 mod modexp;
 
@@ -40,10 +38,12 @@ use reth_evm::revm::precompile::{Crypto, DefaultCrypto, PrecompileError, install
 #[cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))]
 use host_impl::*;
 #[cfg(all(target_os = "zkvm", target_vendor = "risc0"))]
-use risc0_bigint2::field::*;
+use risc0_bigint2::*;
 
 /// Bytes per limb.
 const LIMB_BYTES: usize = size_of::<u32>();
+/// Bits per limb.
+const LIMB_BITS: usize = u32::BITS as usize;
 
 /// R0VM-optimized [`Crypto`] provider for REVM precompiles.
 ///
@@ -67,30 +67,27 @@ impl Crypto for R0vmCrypto {
     fn modexp(&self, base: &[u8], exp: &[u8], modulus: &[u8]) -> Result<Vec<u8>, PrecompileError> {
         let len = modulus.len();
         if len <= 32 {
-            return Ok(modexp::modexp_generic(base, exp, modulus, unchecked::modmul_256));
+            return Ok(modexp::modexp_generic(base, exp, modulus, field::unchecked::modmul_256));
         } else if len <= 48 {
-            return Ok(modexp::modexp_generic(base, exp, modulus, unchecked::modmul_384));
+            return Ok(modexp::modexp_generic(base, exp, modulus, field::unchecked::modmul_384));
         } else if len <= 512 {
-            return Ok(modexp::modexp_generic(base, exp, modulus, unchecked::modmul_4096));
+            return Ok(modexp::modexp_generic(base, exp, modulus, field::unchecked::modmul_4096));
         }
 
         // Fallback for > 4096 bits
         DefaultCrypto.modexp(base, exp, modulus)
     }
 
-    #[cfg(any(test, all(target_os = "zkvm", target_vendor = "risc0")))]
     #[inline]
     fn bn254_g1_add(&self, p1: &[u8], p2: &[u8]) -> Result<[u8; 64], PrecompileError> {
-        ec::bn254::add(p1, p2)
+        ec::bn254::add(p1, p2).ok_or(PrecompileError::Bn254AffineGFailedToCreate)
     }
 
-    #[cfg(any(test, all(target_os = "zkvm", target_vendor = "risc0")))]
     #[inline]
     fn bn254_g1_mul(&self, point: &[u8], scalar: &[u8]) -> Result<[u8; 64], PrecompileError> {
-        ec::bn254::mul(point, scalar)
+        ec::bn254::mul(point, scalar).ok_or(PrecompileError::Bn254AffineGFailedToCreate)
     }
 
-    #[cfg(any(test, all(target_os = "zkvm", target_vendor = "risc0")))]
     #[inline]
     fn secp256r1_verify_signature(&self, msg: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64]) -> bool {
         ec::p256::verify_signature(msg, sig, pk)
@@ -123,8 +120,9 @@ fn be_bytes_to_limbs<const N: usize>(bytes: &[u8]) -> [u32; N] {
     arr
 }
 
+/// Writes a little-endian limb array into a big-endian byte buffer.
 fn limbs_into_be_bytes<const N: usize>(arr: &[u32; N], output: &mut [u8]) {
-    assert!(output.len() >= N * LIMB_BYTES);
+    assert_eq!(output.len(), N * LIMB_BYTES);
     for (dst, src) in output.rchunks_exact_mut(LIMB_BYTES).zip(arr.iter()) {
         dst.copy_from_slice(&src.to_be_bytes())
     }
@@ -187,6 +185,36 @@ mod tests {
         assert_eq!(R0vmCrypto.modexp(&b, &e, &m), Ok(expected.to_vec()));
     }
 
+    #[rstest]
+    #[rustfmt::skip]
+    #[case::not_on_curve("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001", "00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002")]
+    #[case::point_gt_p("30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd4830644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd49", "00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002")]
+    #[case::identity_both("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")]
+    #[case::identity_lhs("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002")]
+    #[case::identity_rhs("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002", "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000")]
+    #[case::inverse("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002", "000000000000000000000000000000000000000000000000000000000000000130644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd45")]
+    #[case::double("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002", "00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002")]
+    fn bn254_g1_add(#[case] p1: Bytes, #[case] p2: Bytes) {
+        let expected = DefaultCrypto.bn254_g1_add(&p1, &p2);
+        assert_eq!(R0vmCrypto.bn254_g1_add(&p1, &p2).ok(), expected.ok());
+    }
+
+    #[rstest]
+    #[rustfmt::skip]
+    #[case::not_on_curve("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000001", "")]
+    #[case::point_gt_p("30644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd4830644e72e131a029b85045b68181585d97816a916871ca8d3c208c16d87cfd49", "")]
+    #[case::identity("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", "0000000000000000000000000000000000000000000000000000000000000003")]
+    #[case::zero_scalar("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002", "0000000000000000000000000000000000000000000000000000000000000000")]
+    #[case::scalar_one("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002", "0000000000000000000000000000000000000000000000000000000000000001")]
+    #[case::scalar_n("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002", "30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000001")]
+    #[case::scalar_n_minus_1("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002", "30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000000")]
+    #[case::scalar_gt_n("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002", "30644e72e131a029b85045b68181585d2833e84879b9709143e1f593f0000002")]
+    #[case::ok("00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002", "0000000000000000000000000000000000000000000000000000000000000003")]
+    fn bn254_g1_mul(#[case] p: Bytes, #[case] scalar: Bytes) {
+        let expected = DefaultCrypto.bn254_g1_mul(&p, &scalar);
+        assert_eq!(R0vmCrypto.bn254_g1_mul(&p, &scalar).ok(), expected.ok());
+    }
+
     // Test vectors from https://github.com/daimo-eth/p256-verifier/tree/master/test-vectors
     #[rstest]
     #[rustfmt::skip]
@@ -202,7 +230,7 @@ mod tests {
     #[case::fail_wrong_msg_5("958b991cfd78f16537fe6d1f4afd10273384db08bdfc843562a22b0626766686f6aec8247599f40bfe01bec0e0ecf17b4319559022d4d9bf007fe929943004eb4866760dedf31b7c691f5ce665f8aae0bda895c23595c834fecc2390a5bcc203b04afcacbb4280713287a2d0c37e23f7513fab898f2c1fefa00ec09a924c335d9b629f1d4fb71901c3e59611afbfea354d101324e894c788d1c01f00b3c251b2", false)]
     #[case::fail_invalid_sig("4cee90eb86eaa050036147a12d49004b6b9c72bd725d39d4785011fe190f0b4dffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff4aebd3099c618202fcfe16ae7770b0c49ab5eadf74b754204a3bb6060e44eff37618b065f9832de4ca6ca971a7a1adc826d0f7c00181a5fb2ddf79ae00b4e10e", false)]
     #[case::fail_invalid_pubkey("4cee90eb86eaa050036147a12d49004b6b9c72bd725d39d4785011fe190f0b4da73bd4903f0ce3b639bbbf6e8e80d16931ff4bcf5993d58468e8fb19086e8cac36dbcd03009df8c59286b162af3bd7fcc0450c9aa81be5d10d312af6c66b1d6000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000", false)]
-    fn secp256r1_sig_verify(#[case] input: Bytes, #[case] expect: bool) {
+    fn secp256r1_verify_signature(#[case] input: Bytes, #[case] expect: bool) {
         let msg = (&input[..32]).try_into().unwrap();
         let sig = (&input[32..96]).try_into().unwrap();
         let pk = (&input[96..160]).try_into().unwrap();
