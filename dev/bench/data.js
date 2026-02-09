@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770309844430,
+  "lastUpdate": 1770675368060,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -297,6 +297,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "validation_cycles",
             "value": 715342664,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "welzwo@gmail.com",
+            "name": "Wolfgang Welz",
+            "username": "Wollac"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "b36afbb6e744cabc783c2916a9b8f83bd9267ba9",
+          "message": "use risc0_zkp sha256 (#211)",
+          "timestamp": "2026-02-09T23:11:24+01:00",
+          "tree_id": "943d210c6ff092ccf46a1b3fd868b005349bf0c0",
+          "url": "https://github.com/boundless-xyz/zeth/commit/b36afbb6e744cabc783c2916a9b8f83bd9267ba9"
+        },
+        "date": 1770675367166,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 884998144,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 725848704,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 10504980,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 715312981,
             "unit": "cycles"
           }
         ]
