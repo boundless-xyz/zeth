@@ -1,4 +1,5 @@
-import argparse, csv, glob, gzip, json, os, statistics, subprocess, sys, tempfile
+import argparse, csv, glob, gzip, json, os, subprocess, sys, tempfile
+from array import array
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
 
@@ -44,6 +45,13 @@ def analyze_traces(trace_files, output_csv):
     cycle_data = defaultdict(lambda: array('Q'))
     gas_data = defaultdict(lambda: array('Q'))
 
+    # Helper function defined ONCE, outside the loop
+    def median_sorted(s):
+        if not s: return 0
+        n = len(s)
+        mid = n // 2
+        return (s[mid - 1] + s[mid]) // 2 if n % 2 == 0 else s[mid]
+
     for i, filename in enumerate(trace_files, 1):
         print(f"  Loading trace {i}/{len(trace_files)}: {os.path.basename(filename)}")
         with gzip.open(filename, "rb") as f:
@@ -74,19 +82,19 @@ def analyze_traces(trace_files, output_csv):
         ]
         writer.writerow(header)
 
-        for name in cycle_data:
+        for name in sorted(cycle_data.keys()): # Sort keys for consistent CSV output
             cycle_arr = cycle_data[name]
             gas_arr = gas_data[name]
 
+            # Calculate CPG (Cycles Per Gas)
             cpg_list = sorted(c // g for c, g in zip(cycle_arr, gas_arr) if g > 0)
+            # Use the raw cycle array for cycle stats
             cycle_list = sorted(cycle_arr)
 
-            def median_sorted(s):
-                n = len(s)
-                mid = n // 2
-                return (s[mid - 1] + s[mid]) // 2 if n % 2 == 0 else s[mid]
-
-            cpg_min, cpg_med, cpg_max = (cpg_list[0], median_sorted(cpg_list), cpg_list[-1]) if cpg_list else ("N/A", "N/A", "N/A")
+            if cpg_list:
+                cpg_min, cpg_med, cpg_max = cpg_list[0], median_sorted(cpg_list), cpg_list[-1]
+            else:
+                cpg_min, cpg_med, cpg_max = "N/A", "N/A", "N/A"
 
             writer.writerow(
                 [
@@ -95,9 +103,9 @@ def analyze_traces(trace_files, output_csv):
                     cpg_min,
                     cpg_med,
                     cpg_max,
-                    sorted_cycles[0],
-                    median_sorted(sorted_cycles),
-                    sorted_cycles[-1],
+                    cycle_list[0],
+                    median_sorted(cycle_list),
+                    cycle_list[-1],
                     sum(cycle_arr),
                 ]
             )
