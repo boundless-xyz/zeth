@@ -15,7 +15,10 @@
 pub(super) mod bn254;
 pub(super) mod p256;
 
-use super::{field::unchecked, limbs_into_be_bytes};
+use super::{
+    field::{modadd_256, modadd_384, modmul_256, modmul_384, unchecked},
+    limbs_into_be_bytes,
+};
 use crate::crypto::{LIMB_BYTES, be_bytes_to_limbs, is_less};
 
 #[cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))]
@@ -68,17 +71,17 @@ where
         let mut t1 = [0u32; WIDTH];
         let mut t2 = [0u32; WIDTH];
 
-        // unchecked: final equality is reduction-agnostic
+        // unchecked: intermediate results that feed the checked final operations
         // t1 <- x^2
-        <[u32; WIDTH]>::unchecked_modmul(x, x, &Self::PRIME, &mut t1);
+        <[u32; WIDTH]>::modmul_unchecked(x, x, &Self::PRIME, &mut t1);
         // t2 <- x^2 + a
-        <[u32; WIDTH]>::unchecked_moadd(&t1, &Self::A, &Self::PRIME, &mut t2);
+        <[u32; WIDTH]>::modadd_unchecked(&t1, &Self::A, &Self::PRIME, &mut t2);
         // t1 <- x(x^2 + a)
-        <[u32; WIDTH]>::unchecked_modmul(&t2, x, &Self::PRIME, &mut t1);
+        <[u32; WIDTH]>::modmul_unchecked(&t2, x, &Self::PRIME, &mut t1);
         // t2 <- (x^3 + ax) + b [RHS]
-        <[u32; WIDTH]>::unchecked_moadd(&t1, &Self::B, &Self::PRIME, &mut t2);
+        <[u32; WIDTH]>::modadd(&t1, &Self::B, &Self::PRIME, &mut t2);
         // t1 <- y^2 [LHS]
-        <[u32; WIDTH]>::unchecked_modmul(y, y, &Self::PRIME, &mut t1);
+        <[u32; WIDTH]>::modmul(y, y, &Self::PRIME, &mut t1);
 
         t1 == t2
     }
@@ -86,24 +89,38 @@ where
 
 /// Modular addition and multiplication dispatched by limb-array width.
 trait ModOps {
-    fn unchecked_moadd(a: &Self, b: &Self, m: &Self, res: &mut Self);
-    fn unchecked_modmul(a: &Self, b: &Self, m: &Self, res: &mut Self);
+    fn modadd(a: &Self, b: &Self, m: &Self, res: &mut Self);
+    fn modadd_unchecked(a: &Self, b: &Self, m: &Self, res: &mut Self);
+    fn modmul(a: &Self, b: &Self, m: &Self, res: &mut Self);
+    fn modmul_unchecked(a: &Self, b: &Self, m: &Self, res: &mut Self);
 }
 
 impl ModOps for [u32; EC_256_WIDTH_WORDS] {
-    fn unchecked_moadd(a: &Self, b: &Self, m: &Self, res: &mut Self) {
+    fn modadd(a: &Self, b: &Self, m: &Self, res: &mut Self) {
+        modadd_256(a, b, m, res);
+    }
+    fn modadd_unchecked(a: &Self, b: &Self, m: &Self, res: &mut Self) {
         unchecked::modadd_256(a, b, m, res);
     }
-    fn unchecked_modmul(a: &Self, b: &Self, m: &Self, res: &mut Self) {
+    fn modmul(a: &Self, b: &Self, m: &Self, res: &mut Self) {
+        modmul_256(a, b, m, res);
+    }
+    fn modmul_unchecked(a: &Self, b: &Self, m: &Self, res: &mut Self) {
         unchecked::modmul_256(a, b, m, res);
     }
 }
 
 impl ModOps for [u32; EC_384_WIDTH_WORDS] {
-    fn unchecked_moadd(a: &Self, b: &Self, m: &Self, res: &mut Self) {
+    fn modadd(a: &Self, b: &Self, m: &Self, res: &mut Self) {
+        modadd_384(a, b, m, res);
+    }
+    fn modadd_unchecked(a: &Self, b: &Self, m: &Self, res: &mut Self) {
         unchecked::modadd_384(a, b, m, res);
     }
-    fn unchecked_modmul(a: &Self, b: &Self, m: &Self, res: &mut Self) {
+    fn modmul(a: &Self, b: &Self, m: &Self, res: &mut Self) {
+        modmul_384(a, b, m, res);
+    }
+    fn modmul_unchecked(a: &Self, b: &Self, m: &Self, res: &mut Self) {
         unchecked::modmul_384(a, b, m, res);
     }
 }
