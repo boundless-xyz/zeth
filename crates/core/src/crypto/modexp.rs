@@ -43,6 +43,8 @@ impl BitAccess for [u8] {
 /// Computes `base^exp mod modulus` using square-and-multiply with N-limb arithmetic.
 ///
 /// `modmul_fn` is expected to be unchecked; final `is_less` ensures canonical result.
+///
+/// Panics if `modulus` is longer than `N * LIMB_BYTES`.
 pub(super) fn modexp_generic<const N: usize, F>(
     base: &[u8],
     exp: &[u8],
@@ -52,7 +54,7 @@ pub(super) fn modexp_generic<const N: usize, F>(
 where
     F: Fn(&[u32; N], &[u32; N], &[u32; N], &mut [u32; N]),
 {
-    assert!(modulus.len() <= N * LIMB_BYTES);
+    assert!(modulus.len() <= N * LIMB_BYTES, "modulus too large for {N} limbs");
     let mod_arr = be_bytes_to_limbs(modulus);
 
     // EIP-198: if the modulus is zero, the result is empty

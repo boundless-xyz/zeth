@@ -39,6 +39,8 @@ where
     const B: [u32; WIDTH];
 
     /// Decodes an affine point from big-endian encoded input.
+    ///
+    /// Panics if `input` length is not exactly `2 * WIDTH * LIMB_BYTES`.
     #[inline]
     fn bytes_to_affine(input: &[u8]) -> Option<AffinePoint<WIDTH, Self>>
     where

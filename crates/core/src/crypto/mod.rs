@@ -105,7 +105,9 @@ impl Crypto for R0vmCrypto {
 /// Converts a BigUint to a fixed-size little-endian limb array.
 fn biguint_to_limbs<const N: usize>(bn: &BigUint) -> [u32; N] {
     let mut arr = [0u32; N];
-    for (dst, src) in arr.iter_mut().zip(bn.iter_u32_digits()) {
+    let digits = bn.iter_u32_digits();
+    assert!(digits.len() <= N, "BigUint too large for {N} limbs");
+    for (dst, src) in arr.iter_mut().zip(digits) {
         *dst = src;
     }
     arr
@@ -113,6 +115,7 @@ fn biguint_to_limbs<const N: usize>(bn: &BigUint) -> [u32; N] {
 
 /// Converts a big-endian byte slice into a fixed-size little-endian limb array.
 fn be_bytes_to_limbs<const N: usize>(bytes: &[u8]) -> [u32; N] {
+    assert!(bytes.len() <= N * LIMB_BYTES, "byte slice too large for {N} limbs");
     let mut arr = [0u32; N];
     for (dst, chunk) in arr.iter_mut().zip(bytes.rchunks(LIMB_BYTES)) {
         *dst = match chunk {

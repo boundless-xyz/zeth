@@ -41,6 +41,8 @@ impl Curve<EC_LIMBS> for Bn254 {
 }
 
 /// BN254 point addition. Returns `None` if either input is not a valid G1 point.
+///
+/// Panics if `a` or `b` is not exactly 64 bytes.
 pub(crate) fn add(a: &[u8], b: &[u8]) -> Option<[u8; 64]> {
     let a = Bn254::bytes_to_affine(a)?;
     let b = Bn254::bytes_to_affine(b)?;
@@ -54,6 +56,8 @@ pub(crate) fn add(a: &[u8], b: &[u8]) -> Option<[u8; 64]> {
 }
 
 /// BN254 scalar multiplication. Returns `None` if the input is not a valid G1 point.
+///
+/// Panics if `p` is not exactly 64 bytes or `scalar` is longer than 32 bytes.
 pub(crate) fn mul(p: &[u8], scalar: &[u8]) -> Option<[u8; 64]> {
     let p = Bn254::bytes_to_affine(p)?;
     let scalar = be_bytes_to_limbs::<EC_LIMBS>(scalar);
