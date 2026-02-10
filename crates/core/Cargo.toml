@@ -11,7 +11,6 @@ repository = { workspace = true }
 # This is considered unsafe because reth does not correctly validate all difficulty constraints.
 unsafe-pre-merge = []
 # Enable R0VM optimized crypto implementations for precompiles.
-# - secp256r1: only available on zkvm target or in tests (requires syscall mocks)
 r0vm = ["dep:num-bigint", "dep:risc0-bigint2"]
 
 [dependencies]
