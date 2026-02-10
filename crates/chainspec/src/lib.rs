@@ -90,7 +90,7 @@ pub static HOODI: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
 /// Use with `anvil` or any node configured with chain ID 31337.
 pub static DEV: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let spec = ChainSpec {
-        chain: NamedChain::AnvilHardhat.into(),
+        chain: NamedChain::Dev.into(),
         forks: EthereumHardfork::devnet().into(),
         deposit_contract_address: None,
         base_fee_params: BaseFeeParams::ethereum(),
