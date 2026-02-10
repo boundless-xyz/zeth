@@ -25,6 +25,7 @@ zeth-chainspec = { path = "crates/chainspec" }
 # r0vm
 risc0-bigint2 = "1.4"
 risc0-build = "3.0.5"
+risc0-zkp = "3.0.4"
 risc0-zkvm = "3.0.5"
 
 # reth

@@ -65,6 +65,13 @@ pub fn install_r0vm_crypto() -> bool {
 
 impl Crypto for R0vmCrypto {
     #[inline]
+    fn sha256(&self, input: &[u8]) -> [u8; 32] {
+        use risc0_zkp::core::hash::sha::{Impl, Sha256};
+
+        (*Impl::hash_bytes(input)).into()
+    }
+
+    #[inline]
     fn modexp(&self, base: &[u8], exp: &[u8], modulus: &[u8]) -> Result<Vec<u8>, PrecompileError> {
         let len = modulus.len();
         if len <= 32 {

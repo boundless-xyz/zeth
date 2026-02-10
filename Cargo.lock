@@ -7534,6 +7534,7 @@ dependencies = [
  "reth-trie-common",
  "risc0-bigint2",
  "risc0-ethereum-trie",
+ "risc0-zkp",
  "rstest",
  "serde",
  "serde_with",
