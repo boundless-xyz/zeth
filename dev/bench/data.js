@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770675368060,
+  "lastUpdate": 1770890044266,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -321,6 +321,50 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/boundless-xyz/zeth/commit/b36afbb6e744cabc783c2916a9b8f83bd9267ba9"
         },
         "date": 1770675367166,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 884998144,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 725848704,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 10504980,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 715312981,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0b1b407c85f93efd0640f978d6766e9b87565733",
+          "message": "build(deps): bump anyhow from 1.0.100 to 1.0.101 (#209)\n\nBumps [anyhow](https://github.com/dtolnay/anyhow) from 1.0.100 to 1.0.101.\n- [Release notes](https://github.com/dtolnay/anyhow/releases)\n- [Commits](https://github.com/dtolnay/anyhow/compare/1.0.100...1.0.101)\n\n---\nupdated-dependencies:\n- dependency-name: anyhow\n  dependency-version: 1.0.101\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>\nCo-authored-by: Wolfgang Welz <welzwo@gmail.com>",
+          "timestamp": "2026-02-12T10:52:04+01:00",
+          "tree_id": "61ea376fa87edd0e787d21673e511411098694d0",
+          "url": "https://github.com/boundless-xyz/zeth/commit/0b1b407c85f93efd0640f978d6766e9b87565733"
+        },
+        "date": 1770890043332,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
