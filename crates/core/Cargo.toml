@@ -28,7 +28,7 @@ reth-trie-common = { workspace = true }
 risc0-bigint2 = { workspace = true, optional = true }
 risc0-ethereum-trie = { workspace = true }
 risc0-zkp = { workspace = true }
-serde = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
 serde_with = { workspace = true }
 
 [target.'cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))'.dependencies]
@@ -40,6 +40,7 @@ ark-secp256r1 = { workspace = true }
 [dev-dependencies]
 rstest = { workspace = true }
 serde_json = { workspace = true }
+sha2 = { workspace = true }
 
 [lints]
 workspace = true
