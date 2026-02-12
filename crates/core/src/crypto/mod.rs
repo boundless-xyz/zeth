@@ -226,6 +226,68 @@ mod tests {
         assert_eq!(R0vmCrypto.bn254_g1_mul(&p, &scalar).ok(), expected.ok());
     }
 
+    // Wycheproof test vectors for P-256 ECDSA (IEEE P1363 signature format)
+    mod wycheproof {
+        use super::*;
+        use serde::Deserialize;
+        use sha2::Digest;
+
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Suite {
+            test_groups: Vec<Group>,
+        }
+
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct Group {
+            public_key: PublicKey,
+            tests: Vec<TestCase>,
+        }
+
+        #[derive(Deserialize)]
+        struct PublicKey {
+            uncompressed: Bytes,
+        }
+
+        #[derive(Deserialize)]
+        #[serde(rename_all = "camelCase")]
+        struct TestCase {
+            tc_id: u64,
+            msg: Bytes,
+            sig: Bytes,
+            result: String,
+        }
+
+        #[test]
+        fn ecdsa_secp256r1_sha256_p1363() {
+            let json = std::fs::read_to_string(
+                "testdata/wycheproof/ecdsa_secp256r1_sha256_p1363_test.json",
+            )
+            .unwrap();
+            let suite: Suite = serde_json::from_str(&json).unwrap();
+
+            for group in &suite.test_groups {
+                // Strip the 04 prefix to get the raw 64-byte x||y public key
+                let pk: &[u8; 64] = group.public_key.uncompressed[1..].try_into().unwrap();
+
+                for tc in &group.tests {
+                    let is_valid = tc.result == "valid";
+
+                    // The API takes a fixed [u8; 64] sig; wrong-length sigs are invalid
+                    let Ok(sig): Result<&[u8; 64], _> = tc.sig.as_ref().try_into() else {
+                        assert!(!is_valid, "tcId {}: wrong-length sig marked valid", tc.tc_id);
+                        continue;
+                    };
+
+                    let hash: [u8; 32] = sha2::Sha256::digest(&tc.msg).into();
+                    let verified = R0vmCrypto.secp256r1_verify_signature(&hash, sig, pk);
+                    assert_eq!(verified, is_valid, "tcId {}: expected {}", tc.tc_id, tc.result);
+                }
+            }
+        }
+    }
+
     // Test vectors from https://github.com/daimo-eth/p256-verifier/tree/master/test-vectors
     #[rstest]
     #[rustfmt::skip]
