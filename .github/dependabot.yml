@@ -5,17 +5,17 @@ updates:
     schedule:
       interval: "weekly"
     groups:
-      # Group 1: R0VM
       risc0-core:
         patterns:
           - "risc0-*"
         exclude-patterns:
           - "risc0-ethereum-trie"
-      # Group 2: Reth
       reth:
         patterns:
           - "reth*"
-      # Group 3: Alloy
       alloy:
         patterns:
           - "alloy*"
+      arkworks:
+        patterns:
+          - "ark-*"
