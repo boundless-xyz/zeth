@@ -43,10 +43,10 @@ reth-stateless = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10
 reth-trie-common = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10.2" }
 
 # alloy
-alloy = { version = "1.6.3" }
+alloy = { version = "1.4.3" }
 alloy-eips = { version = "1.4.3", default-features = false }
 alloy-genesis = { version = "1.4.3", default-features = false }
-alloy-primitives = { version = "1.5.6" }
+alloy-primitives = { version = "1.5.0" }
 alloy-rlp = { version = "0.3.10", default-features = false }
 
 # trie
