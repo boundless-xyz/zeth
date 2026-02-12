@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770890044266,
+  "lastUpdate": 1770917226432,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -385,6 +385,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "validation_cycles",
             "value": 715312981,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "welzwo@gmail.com",
+            "name": "Wolfgang Welz",
+            "username": "Wollac"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "190b9b68ad8ce20b13de506cb4ec4399b103ca39",
+          "message": "Add accelerated `P256VERIFY`, `BN254_ADD` and `BN254_MUL` (#207)\n\n* Move benchmarking into own job\n\n* run all tests\n\n* add accelerated secp256r1_verify_signature\n\n* minor cleanups\n\n* minor cleanups\n\n* update CHANGELOG.md\n\n* extern sys_ only works without zkvm-platform import\n\n* Add accelerated `BN254_ADD` and `BN254_MUL` (#210)\n\n* implement bn254\n\n* crypto module cleanups\n\n* fix cfg\n\n* cleanup Cargo.toml\n\n* Use checked modular ops in satisfies_curve_equation to prevent dishonest prover forgery\n\n* Add overflow guards to limb conversion functions\n\n* use arkworks for the host implementation\n\n* cleanup dependabot.yml\n\n* Optimize satisfies_curve_equation for curves with a=0",
+          "timestamp": "2026-02-12T18:24:08+01:00",
+          "tree_id": "83db9fe71027b775c092365220aac51a1ab6fb3e",
+          "url": "https://github.com/boundless-xyz/zeth/commit/190b9b68ad8ce20b13de506cb4ec4399b103ca39"
+        },
+        "date": 1770917225551,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 875560960,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 715701813,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 10504980,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 705166089,
             "unit": "cycles"
           }
         ]
