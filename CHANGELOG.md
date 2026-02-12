@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - New feature `unsafe-pre-merge` must be enabled to prove pre-merge blocks.
 - Implement versioned caching for input files. This ensures backward compatibility with older cache files by converting them to the current schema on the fly.
+- Add `cycle-tracker` feature and helper script for detailed profiling of zkVM cycle costs per opcode.
 
 ## [0.2.1](https://github.com/boundless-xyz/zeth/releases/tag/v0.2.1) - 2025-08-05
 

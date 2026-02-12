@@ -7,6 +7,7 @@ license = { workspace = true }
 repository = { workspace = true }
 
 [features]
+cycle-tracker = ["flate2", "guests/cycle-tracker", "zeth-core/cycle-tracker"]
 unsafe-pre-merge = ["guests/unsafe-pre-merge", "zeth-core/unsafe-pre-merge"]
 
 [dependencies]
@@ -15,9 +16,11 @@ anyhow = { workspace = true }
 blst = { workspace = true }
 bytemuck = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
+flate2 = { workspace = true, optional = true }
 guests = { workspace = true }
 reth-chainspec = { workspace = true }
 reth-ethereum-primitives = { workspace = true }
+reth-evm = { workspace = true }
 reth-stateless = { workspace = true }
 risc0-zkvm = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -32,6 +35,3 @@ zeth-core = { workspace = true }
 [dev-dependencies]
 serde_json = { workspace = true, features = ["raw_value"] }
 test-log = { workspace = true }
-
-[lints]
-workspace = true
