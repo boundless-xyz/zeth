@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770917226432,
+  "lastUpdate": 1770918415973,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -429,6 +429,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "validation_cycles",
             "value": 705166089,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "7f4ab41b2c509b3dc5731e7c37bd257a01f12a36",
+          "message": "build(deps): bump the alloy group with 4 updates (#212)\n\n* build(deps): bump the alloy group with 4 updates\n\nBumps the alloy group with 4 updates: [alloy](https://github.com/alloy-rs/alloy), [alloy-eips](https://github.com/alloy-rs/alloy), [alloy-genesis](https://github.com/alloy-rs/alloy) and [alloy-primitives](https://github.com/alloy-rs/core).\n\n\nUpdates `alloy` from 1.6.1 to 1.6.3\n- [Release notes](https://github.com/alloy-rs/alloy/releases)\n- [Changelog](https://github.com/alloy-rs/alloy/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/alloy-rs/alloy/compare/v1.6.1...v1.6.3)\n\nUpdates `alloy-eips` from 1.6.1 to 1.6.3\n- [Release notes](https://github.com/alloy-rs/alloy/releases)\n- [Changelog](https://github.com/alloy-rs/alloy/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/alloy-rs/alloy/compare/v1.6.1...v1.6.3)\n\nUpdates `alloy-genesis` from 1.6.1 to 1.6.3\n- [Release notes](https://github.com/alloy-rs/alloy/releases)\n- [Changelog](https://github.com/alloy-rs/alloy/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/alloy-rs/alloy/compare/v1.6.1...v1.6.3)\n\nUpdates `alloy-primitives` from 1.5.4 to 1.5.6\n- [Release notes](https://github.com/alloy-rs/core/releases)\n- [Changelog](https://github.com/alloy-rs/core/blob/main/CHANGELOG.md)\n- [Commits](https://github.com/alloy-rs/core/compare/v1.5.4...v1.5.6)\n\n---\nupdated-dependencies:\n- dependency-name: alloy\n  dependency-version: 1.6.3\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n  dependency-group: alloy\n- dependency-name: alloy-eips\n  dependency-version: 1.6.3\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n  dependency-group: alloy\n- dependency-name: alloy-genesis\n  dependency-version: 1.6.3\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n  dependency-group: alloy\n- dependency-name: alloy-primitives\n  dependency-version: 1.5.6\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n  dependency-group: alloy\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\n\n* update guest Cargo.lock\n\n---------\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>\nCo-authored-by: Wolfgang Welz <welzwo@gmail.com>",
+          "timestamp": "2026-02-12T18:45:24+01:00",
+          "tree_id": "abc740270e5631bc0209ad69cf436e7897e4f61f",
+          "url": "https://github.com/boundless-xyz/zeth/commit/7f4ab41b2c509b3dc5731e7c37bd257a01f12a36"
+        },
+        "date": 1770918415286,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 874512384,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 715714836,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 10504980,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 705179112,
             "unit": "cycles"
           }
         ]
