@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### ⚡️ Features
 
 - Add R0VM-optimized `modexp` precompile using `risc0-bigint2` for accelerated modular exponentiation (up to 4096-bit).
+- Add R0VM-optimized `secp256r1_verify_signature` precompile using `risc0-bigint2` for accelerated P-256 ECDSA verification (EIP-7951).
 
 ### ⚙️ Miscellaneous
 
