@@ -889,6 +889,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ark-secp256r1"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5cf8be5820de567729bfa73a410ddd07cec8ad102d9a4bf61fd6b2e60db264e8"
+dependencies = [
+ "ark-ec",
+ "ark-ff 0.5.0",
+ "ark-std 0.5.0",
+]
+
+[[package]]
 name = "ark-serialize"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1785,15 +1796,6 @@ name = "dyn-clone"
 version = "1.0.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d0881ea181b1df73ff77ffaaf9c7544ecc11e82fba9b5f27b262a3c73a332555"
-
-[[package]]
-name = "ec-generic"
-version = "0.1.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd52b0f4365ed46dcb86449c755f9b7f459ed119fa453915ba4ba2c5cb75ef4e"
-dependencies = [
- "num-bigint",
-]
 
 [[package]]
 name = "ecdsa"
@@ -6346,7 +6348,10 @@ version = "0.3.0"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
- "ec-generic",
+ "ark-bn254",
+ "ark-ec",
+ "ark-ff 0.5.0",
+ "ark-secp256r1",
  "num-bigint",
  "reth-chainspec",
  "reth-errors",

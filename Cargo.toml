@@ -52,6 +52,12 @@ alloy-rlp = { version = "0.3.10", default-features = false }
 # trie
 risc0-ethereum-trie = { git = "https://github.com/risc0/risc0-ethereum.git", tag = "v3.0.1" }
 
+# arkworks
+ark-bn254 = "0.5"
+ark-ec = "0.5"
+ark-ff = "0.5"
+ark-secp256r1 = "0.5"
+
 # misc
 anyhow = "1.0"
 rstest = "0.26"

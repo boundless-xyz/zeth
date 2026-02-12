@@ -40,6 +40,12 @@ impl Curve<EC_LIMBS> for Bn254 {
         &WeierstrassCurve::new(Self::PRIME, Self::A, Self::B);
 }
 
+#[cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))]
+// Enables ark-backed EC operations in `host_impl`.
+impl super::ArkSW for Bn254 {
+    type Config = ark_bn254::g1::Config;
+}
+
 /// BN254 point addition. Returns `None` if either input is not a valid G1 point.
 ///
 /// Panics if `a` or `b` is not exactly 64 bytes.

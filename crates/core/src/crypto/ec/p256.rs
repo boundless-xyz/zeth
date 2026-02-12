@@ -58,6 +58,12 @@ impl Curve<EC_LIMBS> for Secp256r1 {
         &WeierstrassCurve::new(Self::PRIME, Self::A, Self::B);
 }
 
+#[cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))]
+// Enables ark-backed EC operations in `host_impl`.
+impl super::ArkSW for Secp256r1 {
+    type Config = ark_secp256r1::Config;
+}
+
 /// Verifies an ECDSA signature over the P-256 curve.
 pub(crate) fn verify_signature(msg_hash: &[u8; 32], sig: &[u8; 64], pk: &[u8; 64]) -> bool {
     // Signature (r, s)

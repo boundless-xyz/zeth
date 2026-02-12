@@ -75,9 +75,8 @@ pub(super) mod field {
 }
 
 pub(super) mod ec {
-    use crate::crypto::biguint_to_limbs;
-    use ec_generic::{EllipticCurve, Point};
-    use num_bigint::BigUint;
+    use ark_ec::{AffineRepr, CurveGroup, short_weierstrass as sw};
+    use ark_ff::{BigInteger, PrimeField};
 
     pub use risc0_bigint2::ec::{EC_256_WIDTH_WORDS, EC_384_WIDTH_WORDS};
 
@@ -85,76 +84,95 @@ pub(super) mod ec {
         const CURVE: &'static WeierstrassCurve<WIDTH>;
     }
 
-    #[derive(PartialEq, Clone, Debug)]
-    pub struct WeierstrassCurve<const WIDTH: usize> {
-        prime: [u32; WIDTH],
-        a: [u32; WIDTH],
-        b: [u32; WIDTH],
+    /// Maps a curve marker type to its arkworks short-Weierstrass config.
+    pub trait ArkSW: Curve<EC_256_WIDTH_WORDS> {
+        type Config: sw::SWCurveConfig<BaseField: PrimeField>;
     }
+
+    #[derive(Debug, Eq, PartialEq)]
+    pub struct WeierstrassCurve<const WIDTH: usize>(risc0_bigint2::ec::WeierstrassCurve<WIDTH>);
 
     impl<const WIDTH: usize> WeierstrassCurve<WIDTH> {
         pub const fn new(prime: [u32; WIDTH], a: [u32; WIDTH], b: [u32; WIDTH]) -> Self {
-            Self { prime, a, b }
-        }
-
-        fn to_curve(&self) -> EllipticCurve {
-            EllipticCurve {
-                a: BigUint::from_slice(&self.a),
-                b: BigUint::from_slice(&self.b),
-                p: BigUint::from_slice(&self.prime),
-            }
+            Self(risc0_bigint2::ec::WeierstrassCurve::new(prime, a, b))
         }
     }
 
-    #[derive(PartialEq, Clone, Debug)]
-    pub struct AffinePoint<const WIDTH: usize, C: Curve<WIDTH>>(
-        risc0_bigint2::ec::AffinePoint<WIDTH, C>,
-    );
+    #[derive(Debug, Eq, PartialEq)]
+    pub struct AffinePoint<const WIDTH: usize, C>(risc0_bigint2::ec::AffinePoint<WIDTH, C>);
 
-    impl<const WIDTH: usize, C: Curve<WIDTH>> AffinePoint<WIDTH, C> {
+    // Manual clone and copy implementations to not require C to be Copy/Clone
+    impl<const WIDTH: usize, C> Clone for AffinePoint<WIDTH, C> {
+        fn clone(&self) -> Self {
+            *self
+        }
+    }
+    impl<const WIDTH: usize, C> Copy for AffinePoint<WIDTH, C> {}
+
+    impl<const WIDTH: usize, C> AffinePoint<WIDTH, C> {
         pub const IDENTITY: Self = Self(risc0_bigint2::ec::AffinePoint::IDENTITY);
 
         pub fn new_unchecked(x: [u32; WIDTH], y: [u32; WIDTH]) -> Self {
             Self(risc0_bigint2::ec::AffinePoint::new_unchecked(x, y))
         }
-        fn from_point(point: &Point) -> Self {
-            match point {
-                Point::Coor(x, y) => Self(risc0_bigint2::ec::AffinePoint::new_unchecked(
-                    biguint_to_limbs(x),
-                    biguint_to_limbs(y),
-                )),
-                Point::Identity => Self::IDENTITY,
-            }
-        }
-
         pub fn as_u32s(&self) -> Option<&[[u32; WIDTH]; 2]> {
             self.0.as_u32s()
         }
         pub fn is_identity(&self) -> bool {
             self.0.is_identity()
         }
-        pub fn mul(&self, scalar: &[u32; WIDTH], result: &mut Self) {
-            let scalar = BigUint::from_slice(scalar);
-            if scalar.bits() == 0 {
-                *result = Self::IDENTITY;
-            } else {
-                let mul = C::CURVE.to_curve().scalar_mul(&self.to_point(), &scalar).unwrap();
-                *result = Self::from_point(&mul)
-            }
-        }
-        pub fn double(&self, result: &mut Self) {
-            *result = Self::from_point(&C::CURVE.to_curve().double(&self.to_point()).unwrap())
-        }
-        pub fn add(&self, rhs: &Self, result: &mut Self) {
-            let sum = C::CURVE.to_curve().add(&self.to_point(), &rhs.to_point()).unwrap();
-            *result = Self::from_point(&sum)
+    }
+
+    impl<C: ArkSW> AffinePoint<EC_256_WIDTH_WORDS, C> {
+        pub fn mul(&self, scalar: &[u32; EC_256_WIDTH_WORDS], result: &mut Self) {
+            let scalar_u64 = limbs_to_u64s(scalar);
+            let prod = self.to_ark().mul_bigint(&scalar_u64);
+            *result = Self::from_ark(prod.into_affine());
         }
 
-        fn to_point(&self) -> Point {
+        pub fn double(&self, result: &mut Self) {
+            self.add(self, result);
+        }
+
+        pub fn add(&self, rhs: &Self, result: &mut Self) {
+            let sum = self.to_ark().into_group() + rhs.to_ark().into_group();
+            *result = Self::from_ark(sum.into_affine());
+        }
+
+        fn to_ark(&self) -> sw::Affine<C::Config> {
             match self.0.as_u32s() {
-                None => Point::Identity,
-                Some([x, y]) => Point::Coor(BigUint::from_slice(x), BigUint::from_slice(y)),
+                None => sw::Affine::identity(),
+                Some([x, y]) => sw::Affine::new_unchecked(limbs_to_field(x), limbs_to_field(y)),
             }
         }
+
+        fn from_ark(p: sw::Affine<C::Config>) -> Self {
+            if p.is_zero() {
+                Self::IDENTITY
+            } else {
+                Self::new_unchecked(field_to_limbs(&p.x), field_to_limbs(&p.y))
+            }
+        }
+    }
+
+    fn limbs_to_field<const N: usize, F: PrimeField>(limbs: &[u32; N]) -> F {
+        let bytes: Vec<u8> = limbs.iter().flat_map(|l| l.to_le_bytes()).collect();
+        F::from_le_bytes_mod_order(&bytes)
+    }
+
+    fn field_to_limbs<const N: usize, F: PrimeField>(fp: &F) -> [u32; N] {
+        assert_eq!(F::BigInt::NUM_LIMBS * 2, N);
+        let bigint = fp.into_bigint();
+        let u64s = bigint.as_ref();
+        let mut result = [0u32; N];
+        for i in 0..N / 2 {
+            result[2 * i] = u64s[i] as u32;
+            result[2 * i + 1] = (u64s[i] >> 32) as u32;
+        }
+        result
+    }
+
+    fn limbs_to_u64s<const N: usize>(limbs: &[u32; N]) -> Vec<u64> {
+        limbs.chunks_exact(2).map(|c| (c[0] as u64) | ((c[1] as u64) << 32)).collect()
     }
 }
