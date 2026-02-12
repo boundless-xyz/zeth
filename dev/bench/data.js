@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770918415973,
+  "lastUpdate": 1770925190781,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -453,6 +453,50 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/boundless-xyz/zeth/commit/7f4ab41b2c509b3dc5731e7c37bd257a01f12a36"
         },
         "date": 1770918415286,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 874512384,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 715714836,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 10504980,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 705179112,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "welzwo@gmail.com",
+            "name": "Wolfgang Welz",
+            "username": "Wollac"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "152b334b0c241e5979730913b0937c1383e9e6c0",
+          "message": "Add Wycheproof tests for P-256 ECDSA verification (#216)",
+          "timestamp": "2026-02-12T20:32:40+01:00",
+          "tree_id": "09bb8b3be5e575aedccaffd0ab303b55b32f4ec3",
+          "url": "https://github.com/boundless-xyz/zeth/commit/152b334b0c241e5979730913b0937c1383e9e6c0"
+        },
+        "date": 1770925189860,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
