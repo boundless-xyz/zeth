@@ -25,6 +25,7 @@ zeth-chainspec = { path = "crates/chainspec" }
 # r0vm
 risc0-bigint2 = "1.4"
 risc0-build = "3.0.5"
+risc0-zkp = "3.0.4"
 risc0-zkvm = "3.0.5"
 
 # reth
@@ -51,8 +52,15 @@ alloy-rlp = { version = "0.3.10", default-features = false }
 # trie
 risc0-ethereum-trie = { git = "https://github.com/risc0/risc0-ethereum.git", tag = "v3.0.1" }
 
+# arkworks
+ark-bn254 = "0.5"
+ark-ec = "0.5"
+ark-ff = "0.5"
+ark-secp256r1 = "0.5"
+
 # misc
 anyhow = "1.0"
+rstest = "0.26"
 async-trait = "0.1"
 blst = "0.3.15"
 bytemuck = "1.23"

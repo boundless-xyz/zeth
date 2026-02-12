@@ -279,9 +279,9 @@ dependencies = [
 
 [[package]]
 name = "alloy-primitives"
-version = "1.5.4"
+version = "1.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3b88cf92ed20685979ed1d8472422f0c6c2d010cec77caf63aaa7669cc1a7bc2"
+checksum = "66b1483f8c2562bf35f0270b697d5b5fe8170464e935bd855a4c5eaf6f89b354"
 dependencies = [
  "alloy-rlp",
  "bytes",
@@ -886,6 +886,17 @@ dependencies = [
  "ark-std 0.5.0",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "ark-secp256r1"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5cf8be5820de567729bfa73a410ddd07cec8ad102d9a4bf61fd6b2e60db264e8"
+dependencies = [
+ "ark-ec",
+ "ark-ff 0.5.0",
+ "ark-std 0.5.0",
 ]
 
 [[package]]
@@ -6373,6 +6384,10 @@ version = "0.3.0"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
+ "ark-bn254",
+ "ark-ec",
+ "ark-ff 0.5.0",
+ "ark-secp256r1",
  "num-bigint",
  "postcard",
  "reth-chainspec",
@@ -6385,6 +6400,7 @@ dependencies = [
  "reth-trie-common",
  "risc0-bigint2",
  "risc0-ethereum-trie",
+ "risc0-zkp",
  "risc0-zkvm",
  "serde",
  "serde_with",
