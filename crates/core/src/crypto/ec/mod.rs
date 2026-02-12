@@ -76,14 +76,26 @@ where
         // unchecked: intermediate results that feed the checked final operations
         // t1 <- x^2
         <[u32; WIDTH]>::modmul_unchecked(x, x, &Self::PRIME, &mut t1);
-        // t2 <- x^2 + a
-        <[u32; WIDTH]>::modadd_unchecked(&t1, &Self::A, &Self::PRIME, &mut t2);
-        // t1 <- x(x^2 + a)
-        <[u32; WIDTH]>::modmul_unchecked(&t2, x, &Self::PRIME, &mut t1);
-        // t2 <- (x^3 + ax) + b [RHS]
-        <[u32; WIDTH]>::modadd(&t1, &Self::B, &Self::PRIME, &mut t2);
-        // t1 <- y^2 [LHS]
-        <[u32; WIDTH]>::modmul(y, y, &Self::PRIME, &mut t1);
+
+        // When a=0 (e.g. BN254), the compiler eliminates the unused branch,
+        // saving one modadd syscall by computing x^3 + b directly.
+        if Self::A == [0u32; WIDTH] {
+            // t2 <- x^3
+            <[u32; WIDTH]>::modmul_unchecked(&t1, x, &Self::PRIME, &mut t2);
+            // t1 <- x^3 + b [RHS]
+            <[u32; WIDTH]>::modadd(&t2, &Self::B, &Self::PRIME, &mut t1);
+            // t2 <- y^2 [LHS]
+            <[u32; WIDTH]>::modmul(y, y, &Self::PRIME, &mut t2);
+        } else {
+            // t2 <- x^2 + a
+            <[u32; WIDTH]>::modadd_unchecked(&t1, &Self::A, &Self::PRIME, &mut t2);
+            // t1 <- x(x^2 + a)
+            <[u32; WIDTH]>::modmul_unchecked(&t2, x, &Self::PRIME, &mut t1);
+            // t2 <- (x^3 + ax) + b [RHS]
+            <[u32; WIDTH]>::modadd(&t1, &Self::B, &Self::PRIME, &mut t2);
+            // t1 <- y^2 [LHS]
+            <[u32; WIDTH]>::modmul(y, y, &Self::PRIME, &mut t1);
+        }
 
         t1 == t2
     }
