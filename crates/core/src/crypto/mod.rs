@@ -261,11 +261,11 @@ mod tests {
 
         #[test]
         fn ecdsa_secp256r1_sha256_p1363() {
-            let json = std::fs::read_to_string(
-                "testdata/wycheproof/ecdsa_secp256r1_sha256_p1363_test.json",
-            )
+            let suite: Suite = serde_json::from_str(include_str!(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/testdata/wycheproof/ecdsa_secp256r1_sha256_p1363_test.json"
+            )))
             .unwrap();
-            let suite: Suite = serde_json::from_str(&json).unwrap();
 
             for group in &suite.test_groups {
                 // Strip the 04 prefix to get the raw 64-byte x||y public key

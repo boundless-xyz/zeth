@@ -31,6 +31,9 @@ risc0-zkp = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_with = { workspace = true }
 
+[target.'cfg(all(target_os = "zkvm", target_vendor = "risc0"))'.dev-dependencies]
+getrandom = { version = "0.2", features = ["custom"] }
+
 [target.'cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))'.dependencies]
 ark-bn254 = { workspace = true }
 ark-ec = { workspace = true }
