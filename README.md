@@ -119,6 +119,20 @@ ETH_RPC_URL="<YOUR_RPC_URL>" cargo run --release --bin cli --features "unsafe-pr
 
 **Warning**: Proofs generated with this flag are not fully sound and should not be used in production.
 
+## Testing
+
+### Host tests
+Run all tests locally:
+```bash
+cargo test --all-features
+```
+
+### Guest tests
+Run the crypto module tests inside the zkVM using [`cargo risczero guest test`](https://github.com/risc0/risc0/pull/3713):
+```bash
+cargo risczero guest test --manifest-path crates/core/Cargo.toml -- --features r0vm
+```
+
 ## Additional Resources
 
 * [RISC Zero Developer Portal](https://dev.risczero.com/)
