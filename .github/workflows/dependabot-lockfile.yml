@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   update-guest-lockfile:
-    if: github.actor == 'dependabot[bot]'
+    # if: github.actor == 'dependabot[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: checkout code
