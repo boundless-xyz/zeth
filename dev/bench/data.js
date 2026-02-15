@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1770925190781,
+  "lastUpdate": 1771149793281,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -497,6 +497,50 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/boundless-xyz/zeth/commit/152b334b0c241e5979730913b0937c1383e9e6c0"
         },
         "date": 1770925189860,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 874512384,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 715714836,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 10504980,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 705179112,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "c290c83f616f16e35e54cfd178be33bf4b90b843",
+          "message": "build(deps): bump tempfile from 3.24.0 to 3.25.0 (#214)\n\nBumps [tempfile](https://github.com/Stebalien/tempfile) from 3.24.0 to 3.25.0.\n- [Changelog](https://github.com/Stebalien/tempfile/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/Stebalien/tempfile/commits)\n\n---\nupdated-dependencies:\n- dependency-name: tempfile\n  dependency-version: 3.25.0\n  dependency-type: direct:production\n  update-type: version-update:semver-minor\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2026-02-15T11:01:23+01:00",
+          "tree_id": "451701cdf0c815824baadefac71a4077ddb38f58",
+          "url": "https://github.com/boundless-xyz/zeth/commit/c290c83f616f16e35e54cfd178be33bf4b90b843"
+        },
+        "date": 1771149792553,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
