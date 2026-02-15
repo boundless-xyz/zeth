@@ -21,7 +21,8 @@ use alloy_genesis::Genesis;
 use alloy_primitives::{Address, B256, U256, address};
 use reth_chainspec::{BaseFeeParams, Chain, DepositContract, EthChainSpec, Hardforks, NamedChain};
 use reth_ethereum_forks::{
-    EthereumHardfork, EthereumHardforks, ForkCondition, Hardfork, hoodi, mainnet, sepolia,
+    DEV_HARDFORKS, EthereumHardfork, EthereumHardforks, ForkCondition, Hardfork, hoodi, mainnet,
+    sepolia,
 };
 use reth_evm::eth::spec::EthExecutorSpec;
 use reth_primitives_traits::Header;
@@ -84,14 +85,20 @@ pub static HOODI: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     spec.into()
 });
 
-/// Development chain specification for local testing with Anvil (chain ID 31337).
+/// Development chain specification matching `reth --dev` (chain ID 1337).
 ///
 /// All hardforks are activated at genesis (block 0 / timestamp 0).
-/// Use with `anvil` or any node configured with chain ID 31337.
+/// Use with `reth --dev` or any node configured with chain ID 1337.
 pub static DEV: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let spec = ChainSpec {
         chain: NamedChain::Dev.into(),
-        forks: EthereumHardfork::devnet().into(),
+        forks: EthereumHardfork::VARIANTS
+            .iter()
+            .filter_map(|f| {
+                let c = DEV_HARDFORKS.fork(*f);
+                (c != ForkCondition::Never).then_some((*f, c))
+            })
+            .collect(),
         deposit_contract_address: None,
         base_fee_params: BaseFeeParams::ethereum(),
         blob_params: BlobScheduleBlobParams::default(),
@@ -249,12 +256,6 @@ mod tests {
 
     #[test]
     fn dev() {
-        let spec = &DEV;
-        let reth_spec = &reth_chainspec::DEV;
-        // Note: reth's DEV_HARDFORKS is outdated (only up to Prague), so we verify our DEV spec
-        // independently rather than comparing against reth_chainspec::DEV.
-        assert_eq!(spec.deposit_contract_address, reth_spec.deposit_contract.map(|c| c.address));
-        assert_eq!(BaseFeeParamsKind::Constant(spec.base_fee_params), reth_spec.base_fee_params);
-        assert_eq!(spec.blob_params, reth_spec.blob_params);
+        assert_eq(&DEV, &reth_chainspec::DEV);
     }
 }
