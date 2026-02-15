@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1771149982539,
+  "lastUpdate": 1771151705705,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -585,6 +585,50 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/boundless-xyz/zeth/commit/f9e2137d6c7ed07f792a82480a777ea1b188b4f0"
         },
         "date": 1771149981864,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 874512384,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 715714836,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 10504980,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 705179112,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "victor@risczero.com",
+            "name": "Victor Snyder-Graf",
+            "username": "nategraf"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "8595c915f59c06688293f52fde38b33c8fbe770f",
+          "message": "Increase default keep-alive on zeth-rpc-proxy (#219)\n\n* Increase default keep-alive on zeth-rpc-proxy\n\n* fix\n\n---------\n\nCo-authored-by: Wolfgang Welz <welzwo@gmail.com>",
+          "timestamp": "2026-02-15T11:31:28+01:00",
+          "tree_id": "d18f3523cdabbfcfef93331c8005afeff94b4425",
+          "url": "https://github.com/boundless-xyz/zeth/commit/8595c915f59c06688293f52fde38b33c8fbe770f"
+        },
+        "date": 1771151705027,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
