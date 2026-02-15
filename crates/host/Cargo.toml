@@ -16,6 +16,7 @@ blst = { workspace = true }
 bytemuck = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
 guests = { workspace = true }
+humansize = { workspace = true }
 reth-chainspec = { workspace = true }
 reth-ethereum-primitives = { workspace = true }
 reth-stateless = { workspace = true }

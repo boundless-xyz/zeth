@@ -15,14 +15,10 @@
 use alloy::{eips::BlockId, primitives::B256, providers::ProviderBuilder};
 use anyhow::{Context, ensure};
 use clap::{Parser, Subcommand};
-use tokio::time::Instant;
-use tracing::level_filters::LevelFilter;
-use tracing_subscriber::EnvFilter;
-use std::{
-    cmp::PartialEq,
-    fs::{self},
-    path::PathBuf,
-};
+use humansize::{DECIMAL, format_size};
+use std::{fs, path::PathBuf};
+use tracing::{Instrument, debug_span, info, level_filters::LevelFilter};
+use tracing_subscriber::{EnvFilter, fmt::format::FmtSpan};
 use zeth_host::{BlockProcessor, to_zkvm_input_bytes};
 
 /// Simple CLI to create Ethereum block execution proofs.
@@ -64,10 +60,9 @@ struct ProveCommand {
 /// Configure the tracing library.
 fn setup_tracing() {
     tracing_subscriber::fmt()
+        .with_span_events(FmtSpan::CLOSE)
         .with_env_filter(
-            EnvFilter::builder()
-                .with_default_directive(LevelFilter::INFO.into())
-                .from_env_lossy(),
+            EnvFilter::builder().with_default_directive(LevelFilter::INFO.into()).from_env_lossy(),
         )
         .init();
 }
@@ -88,38 +83,42 @@ async fn main() -> anyhow::Result<()> {
     let provider = ProviderBuilder::new().connect(&cli.eth_rpc_url).await?;
     let processor = BlockProcessor::new(provider).await?;
 
-    tracing::info!(chain = %processor.chain(), "Initialized block processor");
-    let retrieve_input_start = Instant::now();
+    info!(chain = %processor.chain(), "Initialized block processor");
 
-    let input = processor.get_input_with_cache(cli.block, &cli.cache_dir).await?;
+    let input = processor
+        .get_input_with_cache(cli.block, &cli.cache_dir)
+        .instrument(debug_span!("retrieve_input"))
+        .await?;
     let block_hash = input.block.hash_slow();
 
-    tracing::info!(
-        block_number=input.block.number,
+    info!(
+        block_number = input.block.number,
         %block_hash,
-        size=format!("{:.3} MB", to_zkvm_input_bytes(&input)?.len() as f64 / 1e6),
-        elapsed=?retrieve_input_start.elapsed(),
+        size = %format_size(to_zkvm_input_bytes(&input)?.len(), DECIMAL),
         "Retrieved input for block",
     );
 
     // always validate
-    let validate_start = Instant::now();
-    processor.validate(input.clone()).context("host validation failed")?;
-    tracing::info!(elapsed=?validate_start.elapsed(), "Host validation successful");
+    {
+        let _guard = debug_span!("validate").entered();
+        processor.validate(input.clone()).context("host validation failed")?;
+    }
+    info!("Host validation successful");
 
     // create proof if requested
     if let Commands::Prove(ProveCommand { segment_po2 }) = cli.command {
-        let proving_start = Instant::now();
+        let (receipt, image_id) = processor
+            .prove(input, segment_po2)
+            .instrument(debug_span!("prove"))
+            .await
+            .context("proving failed")?;
 
-        let (receipt, image_id) =
-            processor.prove(input, segment_po2).await.context("proving failed")?;
-
-        tracing::info!(elapsed=?proving_start.elapsed(), "Proving completed");
         receipt.verify(image_id).context("proof verification failed")?;
 
         let proven_hash =
             B256::try_from(receipt.journal.as_ref()).context("failed to decode journal")?;
         ensure!(proven_hash == block_hash, "journal output mismatch");
+        info!(%block_hash, "Proving successful");
     }
 
     Ok(())
