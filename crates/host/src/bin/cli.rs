@@ -17,7 +17,7 @@ use anyhow::{Context, ensure};
 use clap::{Parser, Subcommand};
 use humansize::{DECIMAL, format_size};
 use std::{fs, path::PathBuf};
-use tracing::{Instrument, debug_span, info, level_filters::LevelFilter};
+use tracing::{Instrument, debug_span, info};
 use tracing_subscriber::{EnvFilter, fmt::format::FmtSpan};
 use zeth_host::{BlockProcessor, to_zkvm_input_bytes};
 
@@ -25,15 +25,15 @@ use zeth_host::{BlockProcessor, to_zkvm_input_bytes};
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Cli {
-    /// URL of the Ethereum RPC endpoint to connect to.
+    /// Ethereum RPC endpoint URL.
     #[arg(long, env)]
     eth_rpc_url: String,
 
-    /// Block number, tag, or hash (e.g., "latest", "0x1565483") to execute.
+    /// Block to execute: number (e.g., 21000000), tag ("latest"), or hash ("0xabcd...").
     #[arg(long, global = true, default_value = "latest")]
     block: BlockId,
 
-    /// Cache folder for input files.
+    /// Directory for caching block inputs.
     #[arg(long, global = true, default_value = "./cache")]
     cache_dir: PathBuf,
 
@@ -52,19 +52,9 @@ enum Commands {
 
 #[derive(Parser, Debug, PartialEq, Eq)]
 struct ProveCommand {
-    /// Optional segment limit po2
+    /// Segment size as a power of 2 (e.g., 20 = 1M cycles per segment).
     #[arg(long, env)]
     segment_po2: Option<u32>,
-}
-
-/// Configure the tracing library.
-fn setup_tracing() {
-    tracing_subscriber::fmt()
-        .with_span_events(FmtSpan::CLOSE)
-        .with_env_filter(
-            EnvFilter::builder().with_default_directive(LevelFilter::INFO.into()).from_env_lossy(),
-        )
-        .init();
 }
 
 #[tokio::main]
@@ -80,7 +70,8 @@ async fn main() -> anyhow::Result<()> {
     fs::create_dir_all(&cli.cache_dir).context("failed to create cache directory")?;
 
     // set up the provider and processor
-    let provider = ProviderBuilder::new().connect(&cli.eth_rpc_url).await?;
+    let provider =
+        ProviderBuilder::new().connect(&cli.eth_rpc_url).await.context("RPC connection failed")?;
     let processor = BlockProcessor::new(provider).await?;
 
     info!(chain = %processor.chain(), "Initialized block processor");
@@ -94,7 +85,7 @@ async fn main() -> anyhow::Result<()> {
     info!(
         block_number = input.block.number,
         %block_hash,
-        size = %format_size(to_zkvm_input_bytes(&input)?.len(), DECIMAL),
+        size = %format_size(to_zkvm_input_bytes(&input).len(), DECIMAL),
         "Retrieved input for block",
     );
 
@@ -122,4 +113,13 @@ async fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+fn setup_tracing() {
+    tracing_subscriber::fmt()
+        .with_span_events(FmtSpan::CLOSE)
+        .with_env_filter(
+            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+        )
+        .init();
 }

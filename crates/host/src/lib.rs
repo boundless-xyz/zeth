@@ -293,10 +293,9 @@ impl CacheFormat for LegacyV1 {
 ///
 /// The ZKVM guest expects aligned words, and this function handles the conversion
 /// from a struct to a raw byte vector.
-pub fn to_zkvm_input_bytes(input: &Input) -> Result<Vec<u8>> {
-    let words = risc0_zkvm::serde::to_vec(input)?;
-    let bytes = bytemuck::cast_slice(words.as_slice());
-    Ok(bytes.to_vec())
+pub fn to_zkvm_input_bytes(input: &Input) -> Vec<u8> {
+    let words = risc0_zkvm::serde::to_vec(input).expect("failed to serialize input");
+    bytemuck::cast_slice(words.as_slice()).to_vec()
 }
 
 /// Recovers the signing [`VerifyingKey`] from each transaction's signature.
