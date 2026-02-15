@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1771149793281,
+  "lastUpdate": 1771149982539,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -541,6 +541,50 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/boundless-xyz/zeth/commit/c290c83f616f16e35e54cfd178be33bf4b90b843"
         },
         "date": 1771149792553,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 874512384,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 715714836,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 10504980,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 705179112,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "49699333+dependabot[bot]@users.noreply.github.com",
+            "name": "dependabot[bot]",
+            "username": "dependabot[bot]"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "f9e2137d6c7ed07f792a82480a777ea1b188b4f0",
+          "message": "build(deps): bump clap from 4.5.57 to 4.5.58 (#213)\n\nBumps [clap](https://github.com/clap-rs/clap) from 4.5.57 to 4.5.58.\n- [Release notes](https://github.com/clap-rs/clap/releases)\n- [Changelog](https://github.com/clap-rs/clap/blob/master/CHANGELOG.md)\n- [Commits](https://github.com/clap-rs/clap/compare/clap_complete-v4.5.57...clap_complete-v4.5.58)\n\n---\nupdated-dependencies:\n- dependency-name: clap\n  dependency-version: 4.5.58\n  dependency-type: direct:production\n  update-type: version-update:semver-patch\n...\n\nSigned-off-by: dependabot[bot] <support@github.com>\nCo-authored-by: dependabot[bot] <49699333+dependabot[bot]@users.noreply.github.com>",
+          "timestamp": "2026-02-15T11:04:57+01:00",
+          "tree_id": "30ff5735775f293a32c6653f619a92065c5aafcb",
+          "url": "https://github.com/boundless-xyz/zeth/commit/f9e2137d6c7ed07f792a82480a777ea1b188b4f0"
+        },
+        "date": 1771149981864,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
