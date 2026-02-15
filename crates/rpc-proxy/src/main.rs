@@ -25,7 +25,7 @@ use reqwest::Client;
 use reth_chainspec::{DEV, HOODI, MAINNET, NamedChain, SEPOLIA};
 use reth_evm_ethereum::EthEvmConfig;
 use serde_json::{Value, json};
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 use tracing::{debug, error, field, info, instrument};
 use tracing_actix_web::TracingLogger;
 use zeth_rpc_proxy::{PreimageLookup, execution_witness};
@@ -63,7 +63,7 @@ struct Args {
     #[clap(long, default_value_t = 5, value_parser = clap::value_parser!(u8).range(..=8))]
     pub preimage_cache_nibbles: u8,
 
-    /// HTTP keep-alive timeout (seconds) for downstream clients.
+    /// How long (in seconds) to keep idle client connections open.
     #[clap(long, default_value_t = 30)]
     pub keep_alive_secs: u64,
 }
