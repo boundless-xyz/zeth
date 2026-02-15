@@ -1,0 +1,35 @@
+name: Update guest lockfile
+
+on:
+  pull_request:
+    paths:
+      - "Cargo.lock"
+
+permissions:
+  contents: write
+
+jobs:
+  update-guest-lockfile:
+    if: github.actor == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: install rust
+        uses: risc0/risc0/.github/actions/rustup@fbe1d0bb75c21fe36cefd87bae25f424b711b291
+
+      - name: update guest lockfile
+        working-directory: guests/stateless-client
+        run: cargo metadata --format-version 1 > /dev/null
+
+      - name: commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add guests/stateless-client/Cargo.lock
+          git diff --cached --quiet || git commit -m "Update guest Cargo.lock"
+          git push
