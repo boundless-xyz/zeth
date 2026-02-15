@@ -12,11 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use super::{LIMB_BYTES, be_bytes_to_limbs, biguint_to_limbs, is_less};
+use super::{
+    LIMB_BITS, LIMB_BYTES, be_bytes_to_limbs, biguint_to_limbs, field::unchecked, is_less,
+    limbs_into_be_bytes,
+};
 use num_bigint::BigUint;
 
 /// Bit-level access to an integer value.
-trait BitAccess {
+pub(super) trait BitAccess {
     /// Returns the fewest number of bits necessary to represent this value.
     fn bits(&self) -> usize;
     /// Returns the `i`-th bit (0 = LSB). Returns `false` for out-of-range bits.
@@ -40,39 +43,55 @@ impl BitAccess for [u8] {
     }
 }
 
-/// Computes `base^exp mod modulus` using square-and-multiply with N-limb arithmetic.
-///
-/// `modmul_fn` is expected to be unchecked; final `is_less` ensures canonical result.
-///
-/// Panics if `modulus` is longer than `N * LIMB_BYTES`.
-pub(super) fn modexp_generic<const N: usize, F>(
-    base: &[u8],
-    exp: &[u8],
-    modulus: &[u8],
-    modmul_fn: F,
-) -> Vec<u8>
-where
-    F: Fn(&[u32; N], &[u32; N], &[u32; N], &mut [u32; N]),
-{
-    assert!(modulus.len() <= N * LIMB_BYTES, "modulus too large for {N} limbs");
-    let mod_arr = be_bytes_to_limbs(modulus);
-
-    // EIP-198: if the modulus is zero, the result is empty
-    if mod_arr.iter().all(|&b| b == 0) {
-        return vec![];
+/// Bit-level access for little-endian limb arrays.
+impl<const N: usize> BitAccess for [u32; N] {
+    fn bits(&self) -> usize {
+        self.iter()
+            .rposition(|&l| l != 0)
+            .map_or(0, |i| i * LIMB_BITS + (LIMB_BITS - self[i].leading_zeros() as usize))
     }
 
-    // Fast path: base fits inside the limb array
-    let base_arr = if base.len() <= N * LIMB_BYTES {
-        be_bytes_to_limbs(base)
-    } else {
-        // Slow path: Reduction required
-        let mut base_bn = BigUint::from_bytes_be(base);
-        let mod_bn = BigUint::from_bytes_be(modulus);
-        base_bn %= mod_bn;
-        biguint_to_limbs(&base_bn)
-    };
+    fn bit(&self, i: usize) -> bool {
+        let limb = i / LIMB_BITS;
+        limb < N && self[limb] & (1 << (i % LIMB_BITS)) != 0
+    }
+}
 
+/// Modular multiplication dispatched by limb-array width.
+pub(super) trait ModMul {
+    fn modmul_unchecked(a: &Self, b: &Self, m: &Self, res: &mut Self);
+}
+
+impl ModMul for [u32; 8] {
+    fn modmul_unchecked(a: &Self, b: &Self, m: &Self, res: &mut Self) {
+        unchecked::modmul_256(a, b, m, res)
+    }
+}
+
+impl ModMul for [u32; 12] {
+    fn modmul_unchecked(a: &Self, b: &Self, m: &Self, res: &mut Self) {
+        unchecked::modmul_384(a, b, m, res)
+    }
+}
+
+impl ModMul for [u32; 128] {
+    fn modmul_unchecked(a: &Self, b: &Self, m: &Self, res: &mut Self) {
+        unchecked::modmul_4096(a, b, m, res)
+    }
+}
+
+/// Computes `base^exp mod modulus` using square-and-multiply.
+///
+/// Operates on `[u32; N]` little-endian limb arrays. The exponent can be
+/// any type implementing `BitAccess` (e.g. `[u32; N]` or `[u8]`).
+///
+/// The modulus must be non-zero; behaviour is undefined otherwise.
+/// Panics if the result is not canonical (dishonest prover).
+pub(super) fn modexp<const N: usize, E>(base: &[u32; N], exp: &E, modulus: &[u32; N]) -> [u32; N]
+where
+    E: BitAccess + ?Sized,
+    [u32; N]: ModMul,
+{
     // Double buffering to avoid mem copy
     let mut t1 = [0u32; N];
     let mut t2 = [0u32; N];
@@ -85,10 +104,10 @@ where
     // Exponentiation by squaring (left-to-right)
     for i in (0..exp.bits()).rev() {
         // next <- curr^2
-        modmul_fn(curr, curr, &mod_arr, next);
+        <[u32; N]>::modmul_unchecked(curr, curr, modulus, next);
         if exp.bit(i) {
             // curr <- next * base
-            modmul_fn(next, &base_arr, &mod_arr, curr);
+            <[u32; N]>::modmul_unchecked(next, base, modulus, curr);
         } else {
             // curr <- next
             std::mem::swap(&mut curr, &mut next);
@@ -96,22 +115,37 @@ where
     }
 
     // Verify result is canonical (honest prover check)
-    assert!(is_less(curr, &mod_arr));
+    assert!(is_less(curr, modulus));
 
-    limbs_to_be_bytes(curr, modulus.len())
+    *curr
 }
 
-/// Converts a limb array to a big-endian byte vec truncated to `len` bytes.
-fn limbs_to_be_bytes<const N: usize>(arr: &[u32; N], len: usize) -> Vec<u8> {
-    let mut bytes = Vec::with_capacity(len);
-    if len > 0 {
-        let idx = (len - 1) / LIMB_BYTES;
-        let skip = (idx + 1) * LIMB_BYTES - len;
-
-        bytes.extend_from_slice(&arr[idx].to_be_bytes()[skip..]);
-        for i in (0..idx).rev() {
-            bytes.extend_from_slice(&arr[i].to_be_bytes());
-        }
+/// Like [`modexp`], but accepts a big-endian byte base and exponent.
+/// Returns minimal big-endian bytes (no leading zeros).
+pub(super) fn modexp_bytes<const N: usize>(base: &[u8], exp: &[u8], modulus: &[u32; N]) -> Vec<u8>
+where
+    [u32; N]: ModMul,
+{
+    // If the modulus is zero, the result is empty
+    if modulus.iter().all(|&l| l == 0) {
+        return vec![];
     }
-    bytes
+
+    // Fast path: base fits inside the limb array
+    let base_arr = if base.len() <= N * LIMB_BYTES {
+        be_bytes_to_limbs(base)
+    } else {
+        // Slow path: Reduction required
+        let mut base_bn = BigUint::from_bytes_be(base);
+        base_bn %= BigUint::from_slice(modulus);
+        biguint_to_limbs(&base_bn)
+    };
+
+    let result = modexp(&base_arr, exp, modulus);
+
+    let mut output = vec![0u8; N * LIMB_BYTES];
+    limbs_into_be_bytes(&result, &mut output);
+    let start = output.iter().position(|&b| b != 0).unwrap_or(output.len());
+    output.drain(..start);
+    output
 }

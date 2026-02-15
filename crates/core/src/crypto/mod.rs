@@ -75,11 +75,11 @@ impl Crypto for R0vmCrypto {
     fn modexp(&self, base: &[u8], exp: &[u8], modulus: &[u8]) -> Result<Vec<u8>, PrecompileError> {
         let len = modulus.len();
         if len <= 32 {
-            return Ok(modexp::modexp_generic(base, exp, modulus, field::unchecked::modmul_256));
+            return Ok(modexp::modexp_bytes(base, exp, &be_bytes_to_limbs::<8>(modulus)));
         } else if len <= 48 {
-            return Ok(modexp::modexp_generic(base, exp, modulus, field::unchecked::modmul_384));
+            return Ok(modexp::modexp_bytes(base, exp, &be_bytes_to_limbs::<12>(modulus)));
         } else if len <= 512 {
-            return Ok(modexp::modexp_generic(base, exp, modulus, field::unchecked::modmul_4096));
+            return Ok(modexp::modexp_bytes(base, exp, &be_bytes_to_limbs::<128>(modulus)));
         }
 
         // Fallback for > 4096 bits
