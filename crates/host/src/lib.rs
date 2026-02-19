@@ -22,10 +22,10 @@ use anyhow::{Context, Result, bail};
 use guests::{DEV_ELF, HOODI_ELF, MAINNET_ELF, SEPOLIA_ELF};
 use reth_chainspec::{ChainSpec, EthChainSpec, NamedChain};
 use reth_ethereum_primitives::{Block, TransactionSigned};
-use reth_stateless::UncompressedPublicKey;
 use risc0_zkvm::{
     Digest, ExecutorEnvBuilder, ProverOpts, Receipt, compute_image_id, default_prover,
 };
+use stateless::UncompressedPublicKey;
 use std::{
     fs::File,
     io::{BufReader, BufWriter, Write},
