@@ -22,7 +22,7 @@ reth-evm = { workspace = true }
 reth-evm-ethereum = { workspace = true }
 reth-primitives-traits = { workspace = true }
 reth-revm = { workspace = true }
-reth-stateless = { workspace = true }
+stateless = { workspace = true }
 reth-trie-common = { workspace = true }
 risc0-ethereum-trie = { workspace = true, features = ["orphan"] }
 serde = { workspace = true }

@@ -18,7 +18,7 @@ clap = { workspace = true, features = ["derive", "env"] }
 guests = { workspace = true }
 reth-chainspec = { workspace = true }
 reth-ethereum-primitives = { workspace = true }
-reth-stateless = { workspace = true }
+stateless = { workspace = true }
 risc0-zkvm = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }

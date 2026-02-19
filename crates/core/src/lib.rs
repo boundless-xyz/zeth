@@ -17,18 +17,17 @@ mod crypto;
 
 use alloy_primitives::{Address, B256, Bytes, KECCAK256_EMPTY, U256, keccak256, map::B256Map};
 use reth_chainspec::{EthChainSpec, Hardforks};
-use reth_errors::ProviderError;
 use reth_ethereum_primitives::Block;
 use reth_evm::{EthEvmFactory, eth::spec::EthExecutorSpec, revm::bytecode::Bytecode};
 use reth_primitives_traits::Header;
-use reth_stateless::validation::StatelessValidationError;
 use reth_trie_common::{EMPTY_ROOT_HASH, HashedPostState, TrieAccount};
 use risc0_ethereum_trie::CachedTrie;
+use stateless::{error::WitnessDbError, validation::StatelessValidationError};
 use std::{cell::RefCell, collections::hash_map::Entry, fmt::Debug, marker::PhantomData};
 
 #[cfg(feature = "r0vm")]
 pub use crypto::{R0vmCrypto, install_r0vm_crypto};
-pub use reth_stateless::{ExecutionWitness, StatelessTrie, UncompressedPublicKey};
+pub use stateless::{ExecutionWitness, StatelessTrie, UncompressedPublicKey};
 
 pub type EthEvmConfig<C> = reth_evm_ethereum::EthEvmConfig<C, EthEvmFactory>;
 
@@ -74,7 +73,7 @@ where
     #[cfg(all(feature = "r0vm", target_os = "zkvm", target_vendor = "risc0"))]
     assert!(install_r0vm_crypto());
 
-    let (hash, _) = reth_stateless::stateless_validation_with_trie::<SparseState, _, _>(
+    let (hash, _) = stateless::stateless_validation_with_trie::<SparseState, _, _>(
         block, signers, witness, chain_spec, config,
     )?;
 
@@ -184,7 +183,7 @@ impl StatelessTrie for SparseState {
     }
 
     /// Returns the `TrieAccount` that corresponds to the `Address`.
-    fn account(&self, address: Address) -> Result<Option<TrieAccount>, ProviderError> {
+    fn account(&self, address: Address) -> Result<Option<TrieAccount>, WitnessDbError> {
         let hashed_address = keccak256(address);
         match self.state.get(hashed_address)? {
             None => Ok(None),
@@ -207,7 +206,7 @@ impl StatelessTrie for SparseState {
     }
 
     /// Returns the storage slot value that corresponds to the given (address, slot) tuple.
-    fn storage(&self, address: Address, slot: U256) -> Result<U256, ProviderError> {
+    fn storage(&self, address: Address, slot: U256) -> Result<U256, WitnessDbError> {
         let storages = self.storages.borrow();
         // storage() is always be called after account(), so the storage trie must already exist
         let storage_trie = storages.get(&keccak256(address)).unwrap();
