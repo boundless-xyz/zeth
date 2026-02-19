@@ -2692,6 +2692,7 @@ dependencies = [
  "risc0-bigint2",
  "serdect",
  "sha2",
+ "signature",
 ]
 
 [[package]]
@@ -4774,8 +4775,7 @@ dependencies = [
 [[package]]
 name = "ruint"
 version = "1.17.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c141e807189ad38a07276942c6623032d3753c8859c146104ac2e4d68865945a"
+source = "git+https://github.com/Wollac/uint?branch=risc0%2Fv1.17.2#1677abe735705a27a4640daac3ab95243c470cb5"
 dependencies = [
  "alloy-rlp",
  "ark-ff 0.3.0",
@@ -4793,6 +4793,7 @@ dependencies = [
  "proptest",
  "rand 0.8.5",
  "rand 0.9.2",
+ "risc0-bigint2",
  "rlp",
  "ruint-macro",
  "serde_core",
@@ -4803,8 +4804,7 @@ dependencies = [
 [[package]]
 name = "ruint-macro"
 version = "1.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48fd7bd8a6377e15ad9d42a8ec25371b94ddc67abe7c8b9127bec79bebaaae18"
+source = "git+https://github.com/Wollac/uint?branch=risc0%2Fv1.17.2#1677abe735705a27a4640daac3ab95243c470cb5"
 
 [[package]]
 name = "rustc-hash"
@@ -5269,8 +5269,11 @@ dependencies = [
  "alloy-primitives",
  "blst",
  "c-kzg",
+ "crypto-bigint",
+ "k256",
  "revm",
  "risc0-zkvm",
+ "ruint",
  "sha2",
  "substrate-bn",
  "tiny-keccak",
