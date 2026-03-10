@@ -25,7 +25,7 @@ use reqwest::Client;
 use reth_chainspec::{DEV, HOODI, MAINNET, NamedChain, SEPOLIA};
 use reth_evm_ethereum::EthEvmConfig;
 use serde_json::{Value, json};
-use std::sync::Arc;
+use std::{sync::Arc, time::Duration};
 use tracing::{debug, error, field, info, instrument};
 use tracing_actix_web::TracingLogger;
 use zeth_rpc_proxy::{PreimageLookup, execution_witness};
@@ -62,6 +62,10 @@ struct Args {
     /// Higher values increase startup time but reduce RPC calls for missing storage keys.
     #[clap(long, default_value_t = 5, value_parser = clap::value_parser!(u8).range(..=8))]
     pub preimage_cache_nibbles: u8,
+
+    /// How long (in seconds) to keep idle client connections open.
+    #[clap(long, default_value_t = 30)]
+    pub keep_alive_secs: u64,
 }
 
 /// This function is the entry point for all incoming RPC requests.
@@ -240,6 +244,7 @@ async fn main() -> anyhow::Result<()> {
     info!(
         bind_address = %args.bind_address,
         upstream_url = %app_state.upstream_url,
+        keep_alive_secs = args.keep_alive_secs,
         "Starting RPC proxy server"
     );
 
@@ -250,6 +255,7 @@ async fn main() -> anyhow::Result<()> {
             .route("/", web::post().to(rpc_handler))
     })
     .bind(args.bind_address)?
+    .keep_alive(Duration::from_secs(args.keep_alive_secs))
     .run()
     .await?;
 
