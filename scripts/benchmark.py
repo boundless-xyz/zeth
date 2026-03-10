@@ -95,7 +95,7 @@ def run_benchmark(block_hash):
 
     try:
         result = subprocess.run(cmd, env=my_env, capture_output=True, text=True, check=True)
-        return parse_metrics(block_hash, result.stdout)
+        return parse_metrics(block_hash, result.stdout + result.stderr)
     except subprocess.CalledProcessError as e:
         print(f"Error proving {block_hash}: {e.stderr}", file=sys.stderr)
         return None
