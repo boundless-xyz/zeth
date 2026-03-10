@@ -18,10 +18,10 @@ use risc0_zkvm::ExecutorEnvBuilder;
 use std::sync::Arc;
 
 #[cfg(feature = "cycle-tracker")]
-pub use implementation::*;
+pub(crate) use implementation::*;
 
 #[cfg(not(feature = "cycle-tracker"))]
-pub use noop::*;
+pub(crate) use noop::*;
 
 #[cfg(feature = "cycle-tracker")]
 mod implementation {
@@ -44,7 +44,7 @@ mod implementation {
     const TRACE_FILE_ENV: &str = "TRACE_FILE";
     const DEFAULT_TRACE_FILE: &str = "trace.json.gz";
 
-    pub struct HostCycleTracker {
+    pub(crate) struct HostCycleTracker {
         metrics: HashMap<String, Vec<(u64, u64)>>,
         precompiles: AddressMap<&'static str>,
     }
@@ -57,7 +57,7 @@ mod implementation {
     impl HostCycleTracker {
         const UNKNOWN_LABEL: &'static str = "unknown";
 
-        pub fn new(chain_spec: Arc<ChainSpec>, header: &Header) -> Self {
+        pub(crate) fn new(chain_spec: Arc<ChainSpec>, header: &Header) -> Self {
             // initialize precompiles map for decoding addresses
             let spec_id = EthEvmConfig::new(chain_spec).evm_env(header).unwrap().cfg_env.spec;
             let precompiles = Precompiles::new(PrecompileSpecId::from_spec_id(spec_id)).inner();
@@ -69,7 +69,7 @@ mod implementation {
         }
 
         /// Attaches the cycle tracker to the zkVM executor environment.
-        pub fn attach<'a>(&'a mut self, env_builder: &mut ExecutorEnvBuilder<'a>) {
+        pub(crate) fn attach<'a>(&'a mut self, env_builder: &mut ExecutorEnvBuilder<'a>) {
             let collector = TraceCollector::new(move |event| {
                 self.process(event);
             });
@@ -96,7 +96,7 @@ mod implementation {
         ///
         /// The output path is determined by the `TRACE_FILE` environment variable, defaulting to
         /// `trace.json.gz` if unset.
-        pub fn save(self) -> anyhow::Result<()> {
+        pub(crate) fn save(self) -> anyhow::Result<()> {
             let path = env::var_os(TRACE_FILE_ENV).unwrap_or(DEFAULT_TRACE_FILE.into());
             let file = File::create(path)?;
             let encoder = GzEncoder::new(BufWriter::new(file), Compression::fast());
@@ -111,16 +111,16 @@ mod implementation {
 mod noop {
     use super::*;
 
-    pub struct HostCycleTracker;
+    pub(crate) struct HostCycleTracker;
 
     impl HostCycleTracker {
-        pub fn new(_: Arc<ChainSpec>, _: &Header) -> Self {
+        pub(crate) fn new(_: Arc<ChainSpec>, _: &Header) -> Self {
             Self
         }
 
-        pub fn attach(&mut self, _: &mut ExecutorEnvBuilder) {}
+        pub(crate) fn attach(&mut self, _: &mut ExecutorEnvBuilder) {}
 
-        pub fn save(self) -> anyhow::Result<()> {
+        pub(crate) fn save(self) -> anyhow::Result<()> {
             Ok(())
         }
     }

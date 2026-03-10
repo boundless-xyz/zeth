@@ -14,7 +14,7 @@
 
 use super::types::{EventKind, TraceFdEvent, TraceId};
 use alloy_primitives::bytes::{Buf, BytesMut};
-use std::{fmt::Display, io, vec::Vec};
+use std::{fmt::Display, io};
 
 /// A frame in the call stack maintained by the trace processor.
 #[derive(Debug, Clone)]

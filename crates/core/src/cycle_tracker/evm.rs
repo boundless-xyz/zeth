@@ -197,6 +197,8 @@ where
 struct CycleTrackerInspector<'a> {
     // last opcode executed
     last_opcode: Option<u8>,
+    // true when the current call is to a precompile (cached between call/call_end)
+    in_precompile: bool,
     // since cycle tracking is performance-critical, we use a local tracer instead of a global one
     tracer: CycleTracer<'a>,
 }
@@ -238,15 +240,17 @@ impl<CTX: ContextTr> Inspector<CTX> for CycleTrackerInspector<'_> {
 
     #[inline]
     fn call(&mut self, context: &mut CTX, inputs: &mut CallInputs) -> Option<CallOutcome> {
-        if context.journal_ref().precompile_addresses().contains(&inputs.bytecode_address) {
+        self.in_precompile =
+            context.journal_ref().precompile_addresses().contains(&inputs.bytecode_address);
+        if self.in_precompile {
             self.tracer.enter_with_gas(inputs.bytecode_address, 0);
         }
         None
     }
 
     #[inline]
-    fn call_end(&mut self, context: &mut CTX, inputs: &CallInputs, outcome: &mut CallOutcome) {
-        if context.journal_ref().precompile_addresses().contains(&inputs.bytecode_address) {
+    fn call_end(&mut self, _context: &mut CTX, inputs: &CallInputs, outcome: &mut CallOutcome) {
+        if self.in_precompile {
             self.tracer.exit_with_gas(inputs.bytecode_address, outcome.result.gas.spent());
         }
     }

@@ -79,7 +79,7 @@ impl<'a> Drop for CycleTracer<'a> {
 }
 
 impl<'a> CycleTracer<'a> {
-    /// Creates a new tracer with a default 48-byte serialization buffer.
+    /// Creates a new tracer with a pre-allocated 64-byte serialization buffer.
     #[inline]
     pub const fn new() -> Self {
         Self { last_enter: None, scratch: [0; 64] }
