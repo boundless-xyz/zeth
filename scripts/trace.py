@@ -1,12 +1,29 @@
-import argparse, csv, glob, gzip, json, os, subprocess, sys, tempfile
+#!/usr/bin/env python3
+
+import argparse, csv, glob, gzip, json, os, re, subprocess, sys, tempfile
 from array import array
 from concurrent.futures import ThreadPoolExecutor
 from collections import defaultdict
+from pathlib import Path
+
+_CACHE_RE = re.compile(r"^input_(0x[0-9a-fA-F]+)(?:\.v(\d))?$")
 
 # Configuration
 ETH_RPC_URL = os.environ.get("ETH_RPC_URL", "https://ethereum-rpc.publicnode.com")
 CLI_BIN = "./target/release/cli"
 CSV_FILE = "opcode-profile.csv"
+
+
+def find_cached_blocks():
+    best = {}  # block_hash -> version
+    for f in glob.glob("cache/input_0x*.json"):
+        m = _CACHE_RE.match(Path(f).stem)
+        if not m:
+            continue
+        block_hash, ver = m.group(1), int(m.group(2) or 0)
+        if ver > best.get(block_hash, -1):
+            best[block_hash] = ver
+    return list(best)
 
 
 def build():
@@ -16,10 +33,7 @@ def build():
     )
 
 
-def run_trace(file_path, output_dir):
-    # cache/input_0x1234.v2.json -> 0x1234
-    block_hash = os.path.basename(file_path).replace("input_", "").replace(".v2.json", "")
-
+def run_trace(block_hash, output_dir):
     # Create a unique path inside the temporary directory
     trace_file = os.path.join(output_dir, f"trace_{block_hash}.json.gz")
 
@@ -118,15 +132,15 @@ def main():
 
     build()
 
-    files = glob.glob("cache/input_0x*.v2.json")
-    print(f"Profiling {len(files)} blocks with {args.jobs} jobs...")
+    blocks = find_cached_blocks()
+    print(f"Profiling {len(blocks)} blocks with {args.jobs} jobs...")
 
     with tempfile.TemporaryDirectory() as temp_dir:
         print(f"Using temporary directory: {temp_dir}")
 
         generated_files = []
         with ThreadPoolExecutor(max_workers=args.jobs) as executor:
-            for res in executor.map(lambda file: run_trace(file, temp_dir), files):
+            for res in executor.map(lambda h: run_trace(h, temp_dir), blocks):
                 if res:
                     generated_files.append(res)
 

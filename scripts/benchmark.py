@@ -2,11 +2,26 @@
 
 import argparse, glob, json, os, re, subprocess, sys, urllib.request
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
+
+_CACHE_RE = re.compile(r"^input_(0x[0-9a-fA-F]+)(?:\.v(\d))?$")
 
 # Configuration
 ETH_RPC_URL = os.environ.get("ETH_RPC_URL", "https://ethereum-rpc.publicnode.com")
 CLI_BIN = "./target/release/cli"
 CSV_FILE = "block-benchmarks.csv"
+
+
+def find_cached_blocks():
+    best = {}  # block_hash -> version
+    for f in glob.glob("cache/input_0x*.json"):
+        m = _CACHE_RE.match(Path(f).stem)
+        if not m:
+            continue
+        block_hash, ver = m.group(1), int(m.group(2) or 0)
+        if ver > best.get(block_hash, -1):
+            best[block_hash] = ver
+    return list(best)
 
 
 def build():
@@ -68,9 +83,7 @@ def parse_metrics(block_hash, output):
     ]
 
 
-def run_benchmark(file_path):
-    # cache/input_0x1234.json -> 0x1234
-    block_hash = os.path.basename(file_path).replace("input_", "").replace(".json", "")
+def run_benchmark(block_hash):
     print(f"Benchmarking block: {block_hash}")
 
     my_env = os.environ.copy()
@@ -95,8 +108,8 @@ def main():
 
     build()
 
-    files = glob.glob("cache/input_0x*.json")
-    print(f"Benchmarking {len(files)} blocks with {args.jobs} jobs...")
+    blocks = find_cached_blocks()
+    print(f"Benchmarking {len(blocks)} blocks with {args.jobs} jobs...")
 
     # Write Header
     with open(CSV_FILE, "w") as f:
@@ -104,7 +117,7 @@ def main():
             "block_number,execution_time,total_cycles,user_cycles,paging_cycles,bigint_cycles,keccak_calls,gas_used\n")
 
     with ThreadPoolExecutor(max_workers=args.jobs) as executor:
-        for result in executor.map(run_benchmark, files):
+        for result in executor.map(run_benchmark, blocks):
             if result:
                 with open(CSV_FILE, "a") as f:
                     f.write(",".join(result) + "\n")

@@ -232,7 +232,7 @@ impl<CTX: ContextTr> Inspector<CTX> for CycleTrackerInspector<'_> {
                     FrameInput::Call(input) => input.gas_limit,
                     FrameInput::Create(input) => input.gas_limit(),
                 };
-                gas -= gas_limit;
+                gas = gas.saturating_sub(gas_limit);
             }
             self.tracer.exit_with_gas(opcode, gas)
         }

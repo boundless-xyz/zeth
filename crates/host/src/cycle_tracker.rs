@@ -78,7 +78,7 @@ mod implementation {
 
         fn process(&mut self, event: TraceEvent) {
             let key = match event.id {
-                TraceId::Custom(str) => str.into_owned(),
+                TraceId::Custom(s) => s.into_owned(),
                 TraceId::Opcode(op) => match OpCode::new(op) {
                     Some(opcode) => opcode.to_string(),
                     None => Self::UNKNOWN_LABEL.to_string(),

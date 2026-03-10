@@ -129,7 +129,7 @@ impl<'a> CycleTracer<'a> {
     /// Records the end of a traced section with an associated gas metric.
     ///
     /// It captures the current cycle count and provided `gas` value (typically cumulative gas
-    /// spent).If the pending enter event matches this exit (same ID), the tracer emits a single
+    /// spent). If the pending enter event matches this exit (same ID), the tracer emits a single
     /// event containing the net cycles and gas used.
     pub fn exit_with_gas(&mut self, id: impl IntoTraceId<'a>, gas: u64) {
         let cycles = platform::cycle_count();
@@ -138,7 +138,12 @@ impl<'a> CycleTracer<'a> {
             None => self.send(EventKind::Exit, id, cycles, gas),
             Some((enter_id, enter_cycles, enter_gas)) => {
                 if enter_id == id {
-                    self.send(EventKind::Complete, id, cycles - enter_cycles, gas - enter_gas);
+                    self.send(
+                        EventKind::Complete,
+                        id,
+                        cycles.saturating_sub(enter_cycles),
+                        gas.saturating_sub(enter_gas),
+                    );
                 } else {
                     self.send(EventKind::Enter, enter_id, enter_cycles, enter_gas);
                     self.send(EventKind::Exit, id, cycles, gas);
