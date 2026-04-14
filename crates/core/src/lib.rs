@@ -23,7 +23,7 @@ use reth_chainspec::{EthChainSpec, Hardforks};
 use reth_ethereum_primitives::Block;
 use reth_evm::{EthEvmFactory, eth::spec::EthExecutorSpec, revm::bytecode::Bytecode};
 use reth_primitives_traits::Header;
-use reth_trie_common::{EMPTY_ROOT_HASH, HashedPostState};
+use reth_trie_common::{EMPTY_ROOT_HASH, HashedPostState, TrieAccount};
 use risc0_ethereum_trie::CachedTrie;
 use stateless::validation::StatelessValidationError;
 use std::{cell::RefCell, collections::hash_map::Entry, fmt::Debug, marker::PhantomData};
@@ -168,7 +168,7 @@ impl<T: alloy_rlp::Decodable + alloy_rlp::Encodable> RlpTrie<T> {
 #[derive(Debug, Clone)]
 struct SparseState {
     /// state MPT containing all used accounts
-    state: RlpTrie<reth_trie_common::TrieAccount>,
+    state: RlpTrie<TrieAccount>,
     /// storage MPTs sorted by the hashed address of their account
     storages: RefCell<B256Map<RlpTrie<U256>>>,
 
@@ -229,10 +229,7 @@ impl StatelessTrie for SparseState {
     }
 
     /// Returns the `TrieAccount` that corresponds to the `Address`.
-    fn account(
-        &self,
-        address: Address,
-    ) -> Result<Option<reth_trie_common::TrieAccount>, WitnessDbError> {
+    fn account(&self, address: Address) -> Result<Option<TrieAccount>, WitnessDbError> {
         let hashed_address = keccak256(address);
         match self.state.get(hashed_address)? {
             None => Ok(None),
@@ -300,7 +297,7 @@ impl StatelessTrie for SparseState {
             };
 
             // update/insert the account after all changes have been processed
-            let account = reth_trie_common::TrieAccount {
+            let account = TrieAccount {
                 nonce: account.nonce,
                 balance: account.balance,
                 storage_root,

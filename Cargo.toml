@@ -5,7 +5,7 @@ members = ["crates/*", "guests"]
 [workspace.package]
 version = "0.3.0"
 edition = "2024"
-rust-version = "1.94"
+rust-version = "1.93"
 license = "Apache-2.0"
 repository = "https://github.com/boundless-xyz/zeth"
 
@@ -46,8 +46,7 @@ alloy = { version = "1.8" }
 alloy-eips = { version = "1.8", default-features = false }
 alloy-genesis = { version = "1.8", default-features = false }
 alloy-primitives = { version = "1.5" }
-alloy-rlp = { version = "0.3", default-features = false }
-alloy-trie = { version = "0.9", default-features = false }
+alloy-rlp = { version = "0.3.8", default-features = false }
 
 # trie
 risc0-ethereum-trie = { git = "https://github.com/risc0/risc0-ethereum.git", tag = "v3.0.1" }
