@@ -16,16 +16,15 @@ use alloy::{
     eips::BlockId,
     primitives::{B256, BlockHash},
     providers::{Provider, ext::DebugApi},
-    rpc::types::debug::ExecutionWitness,
 };
 use anyhow::{Context, Result, bail};
 use guests::{DEV_ELF, HOODI_ELF, MAINNET_ELF, SEPOLIA_ELF};
 use reth_chainspec::{ChainSpec, EthChainSpec, NamedChain};
-use reth_ethereum_primitives::{Block, TransactionSigned};
-use reth_stateless::UncompressedPublicKey;
+use reth_ethereum_primitives::TransactionSigned;
 use risc0_zkvm::{
     Digest, ExecutorEnvBuilder, ProverOpts, Receipt, compute_image_id, default_prover,
 };
+use stateless::{ExecutionWitness, UncompressedPublicKey};
 use std::{
     fs::File,
     io::{BufReader, BufWriter, Write},
@@ -163,28 +162,11 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
     }
 
     /// Gets the input from the filesystem cache, or returns None.
-    /// Handles migration from legacy formats automatically.
     pub fn get_input_cached(&self, block_hash: B256, cache_dir: &Path) -> Result<Option<Input>> {
-        // 1. Try current version
-        if let Some(input) = Current.load_from_dir(block_hash, cache_dir)? {
-            return Ok(Some(input));
-        }
-        // 2. Try legacy versions
-        for format in LEGACY_FORMATS {
-            if let Some(input) = format.load_from_dir(block_hash, cache_dir)? {
-                // Migration: Save as current version
-                if let Err(err) = self.save_to_cache(&input, cache_dir) {
-                    tracing::warn!("Failed to save migrated cache: {}", err);
-                }
-
-                return Ok(Some(input));
-            }
-        }
-        Ok(None)
+        Current.load_from_dir(block_hash, cache_dir)
     }
 
     /// Fetches input, using the filesystem cache if available.
-    /// Handles migration from legacy formats automatically.
     pub async fn get_input_with_cache(&self, block_id: BlockId, cache_dir: &Path) -> Result<Input> {
         let block_hash = match block_id {
             BlockId::Hash(hash) => hash.block_hash,
@@ -232,8 +214,6 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
     }
 }
 
-const LEGACY_FORMATS: &[&dyn CacheFormat] = &[&LegacyV1];
-
 trait CacheFormat: Send + Sync {
     fn file_name(&self, hash: BlockHash) -> String;
     fn load(&self, reader: BufReader<File>) -> Result<Input>;
@@ -256,36 +236,11 @@ struct Current;
 
 impl CacheFormat for Current {
     fn file_name(&self, hash: BlockHash) -> String {
-        format!("input_{hash}.v2.json")
+        format!("input_{hash}.v3.json")
     }
 
     fn load(&self, reader: BufReader<File>) -> Result<Input> {
         Ok(serde_json::from_reader(reader)?)
-    }
-}
-
-struct LegacyV1;
-
-impl CacheFormat for LegacyV1 {
-    fn file_name(&self, hash: BlockHash) -> String {
-        format!("input_{hash}.json")
-    }
-
-    fn load(&self, reader: BufReader<File>) -> Result<Input> {
-        #[serde_with::serde_as]
-        #[derive(serde::Deserialize)]
-        struct InputV1 {
-            #[serde_as(as = "zeth_core::serde_bincode_compat::Block")]
-            block: Block,
-            witness: ExecutionWitness,
-        }
-
-        let legacy: InputV1 =
-            serde_json::from_reader(reader).context("failed to deserialize V1")?;
-        // v1 input misses the signers
-        let signers = recover_signers(legacy.block.body.transactions())?;
-
-        Ok(Input { block: legacy.block, signers, witness: legacy.witness })
     }
 }
 

@@ -18,18 +18,17 @@ alloy-primitives = { workspace = true, features = ["map"] }
 alloy-rlp = { workspace = true }
 num-bigint = { workspace = true, optional = true }
 reth-chainspec = { workspace = true }
-reth-errors = { workspace = true }
 reth-ethereum-primitives = { workspace = true }
 reth-evm = { workspace = true }
 reth-evm-ethereum = { workspace = true }
 reth-primitives-traits = { workspace = true }
-reth-stateless = { workspace = true }
 reth-trie-common = { workspace = true }
 risc0-bigint2 = { workspace = true, optional = true }
 risc0-ethereum-trie = { workspace = true }
 risc0-zkp = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-serde_with = { workspace = true }
+stateless = { workspace = true }
+tries = { workspace = true }
 
 [target.'cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))'.dependencies]
 ark-bn254 = { workspace = true }
