@@ -109,7 +109,7 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
             Input {
                 block,
                 signers,
-                witness: ExecutionWitness {
+                witness: stateless::ExecutionWitness {
                     state: witness.state,
                     codes: witness.codes,
                     keys: vec![], // keys are not used
@@ -231,6 +231,8 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
     }
 }
 
+const LEGACY_FORMATS: &[&dyn CacheFormat] = &[&LegacyV2, &LegacyV1];
+
 trait CacheFormat: Send + Sync {
     fn file_name(&self, hash: BlockHash) -> String;
     fn load(&self, reader: BufReader<File>) -> Result<Input>;
@@ -249,8 +251,6 @@ trait CacheFormat: Send + Sync {
     }
 }
 
-const LEGACY_FORMATS: &[&dyn CacheFormat] = &[&LegacyV2];
-
 struct Current;
 
 impl CacheFormat for Current {
@@ -263,6 +263,43 @@ impl CacheFormat for Current {
     }
 }
 
+/// Deserializes the `serde_bincode_compat` block format used by v1 and v2 cache files.
+fn deserialize_bincode_compat_block(
+    block: &serde_json::value::RawValue,
+) -> Result<reth_ethereum_primitives::Block> {
+    use alloy::consensus::{BlockBody, Header, serde_bincode_compat as bincode_compat};
+
+    #[serde_with::serde_as]
+    #[derive(serde::Deserialize)]
+    struct BlockCompat {
+        #[serde_as(as = "bincode_compat::Header<'_>")]
+        header: Header,
+        body: BlockBodyCompat,
+    }
+
+    #[serde_with::serde_as]
+    #[derive(serde::Deserialize)]
+    struct BlockBodyCompat {
+        #[serde_as(as = "Vec<bincode_compat::EthereumTxEnvelope<'_>>")]
+        transactions: Vec<TransactionSigned>,
+        #[serde_as(as = "Vec<bincode_compat::Header<'_>>")]
+        ommers: Vec<Header>,
+        withdrawals: Option<alloy::eips::eip4895::Withdrawals>,
+    }
+
+    let v: BlockCompat =
+        serde_json::from_str(block.get()).context("failed to deserialize block")?;
+
+    Ok(alloy::consensus::Block {
+        header: v.header,
+        body: BlockBody {
+            transactions: v.body.transactions,
+            ommers: v.body.ommers,
+            withdrawals: v.body.withdrawals,
+        },
+    })
+}
+
 struct LegacyV2;
 
 impl CacheFormat for LegacyV2 {
@@ -271,48 +308,40 @@ impl CacheFormat for LegacyV2 {
     }
 
     fn load(&self, reader: BufReader<File>) -> Result<Input> {
-        use alloy::consensus::{BlockBody, Header, serde_bincode_compat as bincode_compat};
-
-        #[serde_with::serde_as]
         #[derive(serde::Deserialize)]
         struct InputV2 {
-            block: BlockV2,
+            block: Box<serde_json::value::RawValue>,
             signers: Vec<UncompressedPublicKey>,
             witness: ExecutionWitness,
         }
 
-        #[serde_with::serde_as]
-        #[derive(serde::Deserialize)]
-        struct BlockV2 {
-            #[serde_as(as = "bincode_compat::Header<'_>")]
-            header: Header,
-            body: BlockBodyV2,
-        }
-
-        #[serde_with::serde_as]
-        #[derive(serde::Deserialize)]
-        struct BlockBodyV2 {
-            #[serde_as(as = "Vec<bincode_compat::EthereumTxEnvelope<'_>>")]
-            transactions: Vec<TransactionSigned>,
-            #[serde_as(as = "Vec<bincode_compat::Header<'_>>")]
-            ommers: Vec<Header>,
-            withdrawals: Option<alloy::eips::eip4895::Withdrawals>,
-        }
-
         let v2: InputV2 = serde_json::from_reader(reader).context("failed to deserialize V2")?;
+        let block = deserialize_bincode_compat_block(&v2.block)?;
 
-        Ok(Input {
-            block: alloy::consensus::Block {
-                header: v2.block.header,
-                body: BlockBody {
-                    transactions: v2.block.body.transactions,
-                    ommers: v2.block.body.ommers,
-                    withdrawals: v2.block.body.withdrawals,
-                },
-            },
-            signers: v2.signers,
-            witness: v2.witness,
-        })
+        Ok(Input { block, signers: v2.signers, witness: v2.witness })
+    }
+}
+
+struct LegacyV1;
+
+impl CacheFormat for LegacyV1 {
+    fn file_name(&self, hash: BlockHash) -> String {
+        format!("input_{hash}.json")
+    }
+
+    fn load(&self, reader: BufReader<File>) -> Result<Input> {
+        #[derive(serde::Deserialize)]
+        struct InputV1 {
+            block: Box<serde_json::value::RawValue>,
+            witness: ExecutionWitness,
+        }
+
+        let v1: InputV1 = serde_json::from_reader(reader).context("failed to deserialize V1")?;
+        let block = deserialize_bincode_compat_block(&v1.block)?;
+        // v1 input misses the signers
+        let signers = recover_signers(block.body.transactions())?;
+
+        Ok(Input { block, signers, witness: v1.witness })
     }
 }
 
