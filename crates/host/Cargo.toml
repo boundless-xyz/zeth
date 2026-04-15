@@ -11,7 +11,7 @@ unsafe-pre-merge = ["guests/unsafe-pre-merge", "zeth-core/unsafe-pre-merge"]
 
 [dependencies]
 alloy = { workspace = true, features = ["provider-debug-api"] }
-alloy-consensus = { workspace = true }
+alloy-consensus = { workspace = true, features = ["serde", "serde-bincode-compat"] }
 anyhow = { workspace = true }
 blst = { workspace = true }
 bytemuck = { workspace = true }

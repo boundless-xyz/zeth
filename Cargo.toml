@@ -43,7 +43,7 @@ tries = { git = "https://github.com/paradigmxyz/stateless.git", rev = "63d8a00" 
 
 # alloy
 alloy = { version = "1.8" }
-alloy-consensus = { version = "1.8", features = ["serde", "serde-bincode-compat"] }
+alloy-consensus = { version = "1.8" }
 alloy-eips = { version = "1.8", default-features = false }
 alloy-genesis = { version = "1.8", default-features = false }
 alloy-primitives = { version = "1.5" }
