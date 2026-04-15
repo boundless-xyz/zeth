@@ -162,11 +162,28 @@ impl<P: Provider + DebugApi> BlockProcessor<P> {
     }
 
     /// Gets the input from the filesystem cache, or returns None.
+    /// Handles migration from legacy formats automatically.
     pub fn get_input_cached(&self, block_hash: B256, cache_dir: &Path) -> Result<Option<Input>> {
-        Current.load_from_dir(block_hash, cache_dir)
+        // 1. Try current version
+        if let Some(input) = Current.load_from_dir(block_hash, cache_dir)? {
+            return Ok(Some(input));
+        }
+        // 2. Try legacy versions
+        for format in LEGACY_FORMATS {
+            if let Some(input) = format.load_from_dir(block_hash, cache_dir)? {
+                // Migration: Save as current version
+                if let Err(err) = self.save_to_cache(&input, cache_dir) {
+                    tracing::warn!("Failed to save migrated cache: {}", err);
+                }
+
+                return Ok(Some(input));
+            }
+        }
+        Ok(None)
     }
 
     /// Fetches input, using the filesystem cache if available.
+    /// Handles migration from legacy formats automatically.
     pub async fn get_input_with_cache(&self, block_id: BlockId, cache_dir: &Path) -> Result<Input> {
         let block_hash = match block_id {
             BlockId::Hash(hash) => hash.block_hash,
@@ -232,6 +249,8 @@ trait CacheFormat: Send + Sync {
     }
 }
 
+const LEGACY_FORMATS: &[&dyn CacheFormat] = &[&LegacyV2];
+
 struct Current;
 
 impl CacheFormat for Current {
@@ -241,6 +260,59 @@ impl CacheFormat for Current {
 
     fn load(&self, reader: BufReader<File>) -> Result<Input> {
         Ok(serde_json::from_reader(reader)?)
+    }
+}
+
+struct LegacyV2;
+
+impl CacheFormat for LegacyV2 {
+    fn file_name(&self, hash: BlockHash) -> String {
+        format!("input_{hash}.v2.json")
+    }
+
+    fn load(&self, reader: BufReader<File>) -> Result<Input> {
+        use alloy::consensus::{BlockBody, Header, serde_bincode_compat as bincode_compat};
+
+        #[serde_with::serde_as]
+        #[derive(serde::Deserialize)]
+        struct InputV2 {
+            block: BlockV2,
+            signers: Vec<UncompressedPublicKey>,
+            witness: ExecutionWitness,
+        }
+
+        #[serde_with::serde_as]
+        #[derive(serde::Deserialize)]
+        struct BlockV2 {
+            #[serde_as(as = "bincode_compat::Header<'_>")]
+            header: Header,
+            body: BlockBodyV2,
+        }
+
+        #[serde_with::serde_as]
+        #[derive(serde::Deserialize)]
+        struct BlockBodyV2 {
+            #[serde_as(as = "Vec<bincode_compat::EthereumTxEnvelope<'_>>")]
+            transactions: Vec<TransactionSigned>,
+            #[serde_as(as = "Vec<bincode_compat::Header<'_>>")]
+            ommers: Vec<Header>,
+            withdrawals: Option<alloy::eips::eip4895::Withdrawals>,
+        }
+
+        let v2: InputV2 = serde_json::from_reader(reader).context("failed to deserialize V2")?;
+
+        Ok(Input {
+            block: alloy::consensus::Block {
+                header: v2.block.header,
+                body: BlockBody {
+                    transactions: v2.block.body.transactions,
+                    ommers: v2.block.body.ommers,
+                    withdrawals: v2.block.body.withdrawals,
+                },
+            },
+            signers: v2.signers,
+            witness: v2.witness,
+        })
     }
 }
 

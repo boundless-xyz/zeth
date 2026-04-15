@@ -7529,6 +7529,7 @@ name = "zeth-host"
 version = "0.3.0"
 dependencies = [
  "alloy",
+ "alloy-consensus",
  "anyhow",
  "blst",
  "bytemuck",
@@ -7539,6 +7540,7 @@ dependencies = [
  "risc0-zkvm",
  "serde",
  "serde_json",
+ "serde_with",
  "stateless",
  "tempfile",
  "test-log",

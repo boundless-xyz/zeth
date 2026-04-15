@@ -35,45 +35,37 @@ pub use stateless::{ExecutionWitness, StatelessTrie, UncompressedPublicKey};
 
 pub type EthEvmConfig<C> = reth_evm_ethereum::EthEvmConfig<C, EthEvmFactory>;
 
-/// Serde adapter that encodes a [`Block`] as RLP bytes.
+/// Serde adapter for [`Block`] that uses RLP encoding for binary serializers.
 ///
-/// The default `Block` serde is incompatible with risc0's binary serializer. This adapter
-/// encodes the block as RLP: 0x-prefixed hex string for human-readable formats (JSON),
-/// raw bytes for binary formats (risc0 zkVM).
+/// Human-readable formats (JSON) use `Block`'s default serde. Binary formats (risc0 zkVM)
+/// use RLP encoding because `Block`'s default serde is incompatible with risc0's serializer.
 mod rlp_block {
-    use alloy_primitives::hex;
     use reth_ethereum_primitives::Block;
-    use serde::{Deserializer, Serializer, de};
+    use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
     pub(super) fn serialize<S: Serializer>(block: &Block, s: S) -> Result<S::Ok, S::Error> {
-        let rlp = alloy_rlp::encode(block);
         if s.is_human_readable() {
-            s.serialize_str(&hex::encode_prefixed(&rlp))
+            block.serialize(s)
         } else {
-            s.serialize_bytes(&rlp)
+            s.serialize_bytes(&alloy_rlp::encode(block))
         }
     }
 
     pub(super) fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Block, D::Error> {
         if d.is_human_readable() {
-            d.deserialize_str(RlpBlockVisitor)
+            Block::deserialize(d)
         } else {
-            d.deserialize_byte_buf(RlpBlockVisitor)
+            d.deserialize_byte_buf(RlpBytesVisitor)
         }
     }
 
-    struct RlpBlockVisitor;
+    struct RlpBytesVisitor;
 
-    impl<'de> de::Visitor<'de> for RlpBlockVisitor {
+    impl<'de> de::Visitor<'de> for RlpBytesVisitor {
         type Value = Block;
 
         fn expecting(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-            f.write_str("RLP-encoded block as a 0x-prefixed hex string or raw bytes")
-        }
-
-        fn visit_str<E: de::Error>(self, v: &str) -> Result<Block, E> {
-            let bytes = hex::decode(v).map_err(E::custom)?;
-            alloy_rlp::decode_exact(&bytes).map_err(E::custom)
+            f.write_str("RLP-encoded block bytes")
         }
 
         fn visit_bytes<E: de::Error>(self, v: &[u8]) -> Result<Block, E> {
