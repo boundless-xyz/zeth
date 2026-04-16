@@ -6,7 +6,7 @@
 JOBS="${1:-4}"
 
 # Set the Ethereum RPC URL from the environment variable, with a default fallback
-ETH_RPC_URL="${ETH_RPC_URL:-"https://ethereum-rpc.publicnode.com"}"
+export ETH_RPC_URL="${ETH_RPC_URL:-"https://ethereum-rpc.publicnode.com"}"
 
 # Name of CSV output file
 OUTPUT_CSV="results.csv"
