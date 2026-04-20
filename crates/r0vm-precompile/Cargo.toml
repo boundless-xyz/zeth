@@ -1,0 +1,23 @@
+[package]
+name = "zeth-r0vm-precompile"
+version = { workspace = true }
+edition = { workspace = true }
+rust-version = { workspace = true }
+license = { workspace = true }
+repository = { workspace = true }
+description = "R0VM-accelerated EVM precompile primitives backed by risc0-crypto. Guest-only: consumers must depend on this crate inside a `cfg(all(target_os = \"zkvm\", target_vendor = \"risc0\"))` target-gate."
+
+[dependencies]
+alloy-primitives = { workspace = true, features = ["map"] }
+risc0-crypto = { workspace = true }
+risc0-zkp = { workspace = true }
+
+[dev-dependencies]
+# `cargo risczero guest test` builds the integration tests for the zkVM
+# target. `getrandom` 0.2 needs the `custom` feature to compile there.
+getrandom = { version = "0.2", features = ["custom"] }
+num-bigint = { workspace = true }
+rstest = { workspace = true }
+
+[lints]
+workspace = true

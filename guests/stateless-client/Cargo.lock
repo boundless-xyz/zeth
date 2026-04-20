@@ -889,17 +889,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ark-secp256r1"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5cf8be5820de567729bfa73a410ddd07cec8ad102d9a4bf61fd6b2e60db264e8"
-dependencies = [
- "ark-ec",
- "ark-ff 0.5.0",
- "ark-std 0.5.0",
-]
-
-[[package]]
 name = "ark-serialize"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1312,13 +1301,37 @@ dependencies = [
 ]
 
 [[package]]
+name = "cargo-platform"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd0061da739915fae12ea00e16397555ed4371a6bb285431aab930f61b0aa4ba"
+dependencies = [
+ "serde",
+ "serde_core",
+]
+
+[[package]]
 name = "cargo_metadata"
 version = "0.19.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dd5eb614ed4c27c5d706420e4320fbe3216ab31fa1c33cd8246ac36dae4479ba"
 dependencies = [
  "camino",
- "cargo-platform",
+ "cargo-platform 0.1.9",
+ "semver 1.0.27",
+ "serde",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
+name = "cargo_metadata"
+version = "0.23.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef987d17b0a113becdd19d3d0022d04d7ef41f9efe4f3fb63ac44ba61df3ade9"
+dependencies = [
+ "camino",
+ "cargo-platform 0.3.3",
  "semver 1.0.27",
  "serde",
  "serde_json",
@@ -2586,6 +2599,12 @@ name = "include_bytes_aligned"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4ee796ad498c8d9a1d68e477df8f754ed784ef875de1414ebdaf169f70a6a784"
+
+[[package]]
+name = "include_bytes_aligned"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb3f0fd7913f9257b6862075640a029db0fff0887a3f49e00059f52b7111cf11"
 
 [[package]]
 name = "indexmap"
@@ -4500,7 +4519,7 @@ version = "1.4.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "af3997ed5c8a35afd2fa39055f1b841e19571379e55ee634a06c41d7b924052d"
 dependencies = [
- "include_bytes_aligned",
+ "include_bytes_aligned 0.1.4",
  "stability",
 ]
 
@@ -4533,7 +4552,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f89937fa1c424b188cc4cabf65335736eca9c1e3df79c127f48636f55682f3a4"
 dependencies = [
  "anyhow",
- "cargo_metadata",
+ "cargo_metadata 0.19.2",
  "derive_builder",
  "dirs",
  "docker-generate",
@@ -4610,6 +4629,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "risc0-crypto"
+version = "0.1.0"
+source = "git+https://github.com/Wollac/risc0-crypto?rev=320a9dfe61fe0ffc1ff2f732d894dfa9647a188c#320a9dfe61fe0ffc1ff2f732d894dfa9647a188c"
+dependencies = [
+ "bytemuck",
+ "cargo_metadata 0.23.1",
+ "educe",
+ "include_bytes_aligned 0.2.0",
+ "risc0-bigint2",
+]
+
+[[package]]
 name = "risc0-ethereum-trie"
 version = "0.2.0"
 source = "git+https://github.com/risc0/risc0-ethereum.git?tag=v3.0.1#365e7b2db4f620fa256580c27558d2623362b9ae"
@@ -4649,7 +4680,7 @@ version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8bd70cb45b5d37d025f25663b87c6b9dc9df7f413ee2068531a57f50b0eb95db"
 dependencies = [
- "include_bytes_aligned",
+ "include_bytes_aligned 0.1.4",
  "no_std_strings",
  "risc0-zkvm-platform",
 ]
@@ -6348,11 +6379,6 @@ version = "0.3.0"
 dependencies = [
  "alloy-primitives",
  "alloy-rlp",
- "ark-bn254",
- "ark-ec",
- "ark-ff 0.5.0",
- "ark-secp256r1",
- "num-bigint",
  "reth-chainspec",
  "reth-errors",
  "reth-ethereum-primitives",
@@ -6361,11 +6387,19 @@ dependencies = [
  "reth-primitives-traits",
  "reth-stateless",
  "reth-trie-common",
- "risc0-bigint2",
  "risc0-ethereum-trie",
- "risc0-zkp",
  "serde",
  "serde_with",
+ "zeth-r0vm-precompile",
+]
+
+[[package]]
+name = "zeth-r0vm-precompile"
+version = "0.3.0"
+dependencies = [
+ "alloy-primitives",
+ "risc0-crypto",
+ "risc0-zkp",
 ]
 
 [[package]]
