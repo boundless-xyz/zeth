@@ -16,9 +16,9 @@
 
 use alloy_primitives::Address;
 use risc0_crypto::{
+    BigInt,
     curves::secp256k1,
     ecdsa::{RecoverableSignature, RecoveryId, Signature},
-    BigInt,
 };
 
 /// Recovers the Ethereum [`Address`] from an ECDSA signature.

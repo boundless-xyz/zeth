@@ -29,7 +29,7 @@
 
 #![cfg(all(target_os = "zkvm", target_vendor = "risc0"))]
 
-use alloy_primitives::{address, hex, Bytes};
+use alloy_primitives::{Bytes, address, hex};
 use num_bigint::BigUint;
 use rstest::rstest;
 use zeth_r0vm_precompile::{

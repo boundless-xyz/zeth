@@ -14,7 +14,7 @@
 
 //! EIP-7951 P-256 signature verification.
 
-use risc0_crypto::{curves::secp256r1, ecdsa::Signature, AffinePoint, BigInt};
+use risc0_crypto::{AffinePoint, BigInt, curves::secp256r1, ecdsa::Signature};
 
 /// Verifies a P-256 ECDSA signature.
 ///

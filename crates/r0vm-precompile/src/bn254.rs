@@ -14,7 +14,7 @@
 
 //! EIP-196 BN254 G1 add and scalar multiplication.
 
-use risc0_crypto::{curves::bn254, AffinePoint, BigInt};
+use risc0_crypto::{AffinePoint, BigInt, curves::bn254};
 
 /// Adds two 64-byte G1 points.
 ///

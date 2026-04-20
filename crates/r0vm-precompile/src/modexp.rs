@@ -17,8 +17,8 @@
 use alloc::vec;
 use alloc::vec::Vec;
 use risc0_crypto::{
-    modexp::{self, BitAccess, ModMul},
     BigInt,
+    modexp::{self, BitAccess, ModMul},
 };
 
 /// Computes `base^exp mod modulus`.
