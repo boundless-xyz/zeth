@@ -1055,7 +1055,7 @@ dependencies = [
 [[package]]
 name = "c-kzg"
 version = "2.1.7"
-source = "git+https://github.com/Wollac/c-kzg-4844.git?branch=risc0-v2.1.7#fabdb9302039391d6fd3c47487d1316bdca8888c"
+source = "git+https://github.com/risc0/c-kzg-4844?tag=v2.1.7-risczero.0#fabdb9302039391d6fd3c47487d1316bdca8888c"
 dependencies = [
  "blst",
  "bytemuck",

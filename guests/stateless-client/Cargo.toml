@@ -10,7 +10,7 @@ codegen-units = 1
 lto = "fat"
 
 [dependencies]
-alloy-primitives = { version = "*", features = ["tiny-keccak"] }
+alloy-primitives = { version = "1.5.3", features = ["tiny-keccak"] }
 blst = { version = "=0.3.16" }
 c-kzg = { version = "=2.1.7" }
 # Must match the major revm version used by reth to avoid duplicate crates in the guest binary.
@@ -27,8 +27,7 @@ unsafe-pre-merge = ["zeth-core/unsafe-pre-merge"]
 
 [patch.crates-io]
 blst = { git = "https://github.com/risc0/blst", tag = "v0.3.16-risczero.0" }
-# TODO: Replace with official risc0 fork once a v2.1.7-risczero tag is available.
-c-kzg = { git = "https://github.com/Wollac/c-kzg-4844.git", branch = "risc0-v2.1.7" }
+c-kzg = { git = "https://github.com/risc0/c-kzg-4844", tag = "v2.1.7-risczero.0" }
 crypto-bigint = { git = "https://github.com/risc0/RustCrypto-crypto-bigint", tag = "v0.5.5-risczero.0" }
 k256 = { git = "https://github.com/risc0/RustCrypto-elliptic-curves", tag = "k256/v0.13.4-risczero.1" }
 sha2 = { git = "https://github.com/risc0/RustCrypto-hashes", tag = "sha2-v0.10.9-risczero.0" }
