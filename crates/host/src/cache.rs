@@ -24,8 +24,8 @@
 //! | v1      | `input_{hash}.json`       | `serde_bincode_compat` block, no signers          |
 
 use alloy::primitives::BlockHash;
+use alloy_rlp::{Decodable, Encodable};
 use anyhow::{Context, Result};
-use reth_ethereum_primitives::TransactionSigned;
 use stateless::{ExecutionWitness, UncompressedPublicKey};
 use std::{
     fs::File,
@@ -108,9 +108,21 @@ impl CacheFormat for Current {
 /// `serde_bincode_compat` block type from reth v1 used to deserialize the v1 and v2 cache formats.
 type RethV1Block<'a> = reth_primitives_traits_v1::serde_bincode_compat::Block<
     'a,
-    TransactionSigned,
+    reth_ethereum_primitives_v1::TransactionSigned,
     reth_primitives_traits_v1::Header,
 >;
+
+/// Convert a legacy v1-typed block into the workspace block type by RLP round-tripping.
+/// Ethereum block RLP is a stable protocol-level format, so this works across the alloy 1.x
+/// → 2.x type boundary.
+fn v1_to_workspace(
+    v1_block: reth_ethereum_primitives_v1::Block,
+) -> Result<reth_ethereum_primitives::Block> {
+    let mut buf = Vec::with_capacity(v1_block.length());
+    v1_block.encode(&mut buf);
+    reth_ethereum_primitives::Block::decode(&mut buf.as_slice())
+        .context("failed to re-decode legacy block as workspace block")
+}
 
 struct LegacyV2;
 
@@ -124,13 +136,14 @@ impl CacheFormat for LegacyV2 {
         #[derive(serde::Deserialize)]
         struct InputV2 {
             #[serde_as(as = "RethV1Block<'_>")]
-            block: reth_ethereum_primitives::Block,
+            block: reth_ethereum_primitives_v1::Block,
             signers: Vec<UncompressedPublicKey>,
             witness: ExecutionWitness,
         }
 
         let v2: InputV2 = serde_json::from_reader(reader).context("failed to deserialize V2")?;
-        Ok(Input { block: v2.block, signers: v2.signers, witness: v2.witness })
+        let block = v1_to_workspace(v2.block)?;
+        Ok(Input { block, signers: v2.signers, witness: v2.witness })
     }
 }
 
@@ -146,12 +159,13 @@ impl CacheFormat for LegacyV1 {
         #[derive(serde::Deserialize)]
         struct InputV1 {
             #[serde_as(as = "RethV1Block<'_>")]
-            block: reth_ethereum_primitives::Block,
+            block: reth_ethereum_primitives_v1::Block,
             witness: ExecutionWitness,
         }
 
         let v1: InputV1 = serde_json::from_reader(reader).context("failed to deserialize V1")?;
-        let signers = recover_signers(v1.block.body.transactions())?;
-        Ok(Input { block: v1.block, signers, witness: v1.witness })
+        let block = v1_to_workspace(v1.block)?;
+        let signers = recover_signers(block.body.transactions())?;
+        Ok(Input { block, signers, witness: v1.witness })
     }
 }

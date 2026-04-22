@@ -111,11 +111,11 @@ where
     #[cfg(all(feature = "r0vm", target_os = "zkvm", target_vendor = "risc0"))]
     assert!(install_r0vm_crypto());
 
-    let (hash, _) = stateless::stateless_validation_with_trie::<SparseState, _, _>(
+    let output = stateless::stateless_validation_with_trie::<SparseState, _, _>(
         block, signers, witness, chain_spec, config,
     )?;
 
-    Ok(hash)
+    Ok(output.block_hash)
 }
 
 /// Zero-overhead helper for tries that only contain RLP encoded data.
