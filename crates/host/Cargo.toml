@@ -11,12 +11,13 @@ unsafe-pre-merge = ["guests/unsafe-pre-merge", "zeth-core/unsafe-pre-merge"]
 
 [dependencies]
 alloy = { workspace = true, features = ["provider-debug-api"] }
+alloy-rlp = { workspace = true }
 anyhow = { workspace = true }
 blst = { workspace = true }
 bytemuck = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
 guests = { workspace = true }
-alloy-rlp = { workspace = true }
+humansize = { workspace = true }
 reth-chainspec = { workspace = true }
 reth-ethereum-primitives = { workspace = true }
 # Pinned v1 aliases used only for deserializing legacy v1/v2 cache files (bincode-compat
@@ -32,7 +33,7 @@ stateless = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 zeth-core = { workspace = true }
 
 [dev-dependencies]
