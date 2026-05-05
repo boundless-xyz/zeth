@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1771151705705,
+  "lastUpdate": 1777994585931,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -629,6 +629,50 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/boundless-xyz/zeth/commit/8595c915f59c06688293f52fde38b33c8fbe770f"
         },
         "date": 1771151705027,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 874512384,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 715714836,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 10504980,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 705179112,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "victor@risczero.com",
+            "name": "Victor Snyder-Graf",
+            "username": "nategraf"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "e28c237c09ac2ea316421332be6d7a3d1e2013e9",
+          "message": "Use tracing in the Zeth CLI and add a few more log lines (#218)\n\n* replace println with trace and add more lines\n\n* minor cleanups\n\n* minor cleanups\n\n* unify validate span and drop narrating comments\n\n* promote phase spans to info level\n\ndebug_span! made the spans invisible under the default RUST_LOG=info\nfilter — they were silent in CI and for any default CLI invocation.\nThe whole point of adding them was to surface phase timing, so default\nthem visible.\n\n* write logs to stderr and tighten env filter handling\n\n- Send tracing output to stderr so the CLI's stdout stays clean for\n  any future data output and so shell `2>/dev/null` works as expected.\n- Use EnvFilter::builder().from_env_lossy() with a default directive,\n  which surfaces a warning on a malformed RUST_LOG instead of silently\n  swallowing the whole filter.\n\n* fix stable rustfmt formatting\n\n---------\n\nCo-authored-by: Wolfgang Welz <welzwo@gmail.com>",
+          "timestamp": "2026-05-05T17:20:29+02:00",
+          "tree_id": "2514fc5062a4a69165fa853d2bfdaa8a1610865f",
+          "url": "https://github.com/boundless-xyz/zeth/commit/e28c237c09ac2ea316421332be6d7a3d1e2013e9"
+        },
+        "date": 1777994584990,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
