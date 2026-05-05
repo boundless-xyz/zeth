@@ -115,9 +115,7 @@ fn setup_tracing() {
         .with_writer(std::io::stderr)
         .with_span_events(FmtSpan::CLOSE)
         .with_env_filter(
-            EnvFilter::builder()
-                .with_default_directive(LevelFilter::INFO.into())
-                .from_env_lossy(),
+            EnvFilter::builder().with_default_directive(LevelFilter::INFO.into()).from_env_lossy(),
         )
         .init();
 }
