@@ -17,7 +17,7 @@ use anyhow::{Context, ensure};
 use clap::{Parser, Subcommand};
 use humansize::{DECIMAL, format_size};
 use std::{fs, path::PathBuf};
-use tracing::{Instrument, debug_span, info};
+use tracing::{Instrument, info, info_span};
 use tracing_subscriber::{EnvFilter, fmt::format::FmtSpan};
 use zeth_host::{BlockProcessor, to_zkvm_input_bytes};
 
@@ -76,7 +76,7 @@ async fn main() -> anyhow::Result<()> {
 
     let input = processor
         .get_input_with_cache(cli.block, &cli.cache_dir)
-        .instrument(debug_span!("retrieve_input"))
+        .instrument(info_span!("retrieve_input"))
         .await?;
     let block_hash = input.block.hash_slow();
 
@@ -87,7 +87,7 @@ async fn main() -> anyhow::Result<()> {
         "Retrieved input for block",
     );
 
-    debug_span!("validate")
+    info_span!("validate")
         .in_scope(|| processor.validate(input.clone()))
         .context("host validation failed")?;
     info!("Host validation successful");
@@ -95,7 +95,7 @@ async fn main() -> anyhow::Result<()> {
     if let Commands::Prove(ProveCommand { segment_po2 }) = cli.command {
         let (receipt, image_id) = processor
             .prove(input, segment_po2)
-            .instrument(debug_span!("prove"))
+            .instrument(info_span!("prove"))
             .await
             .context("proving failed")?;
 
