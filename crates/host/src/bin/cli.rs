@@ -18,7 +18,7 @@ use clap::{Parser, Subcommand};
 use humansize::{DECIMAL, format_size};
 use std::{fs, path::PathBuf};
 use tracing::{Instrument, info, info_span};
-use tracing_subscriber::{EnvFilter, fmt::format::FmtSpan};
+use tracing_subscriber::{EnvFilter, filter::LevelFilter, fmt::format::FmtSpan};
 use zeth_host::{BlockProcessor, to_zkvm_input_bytes};
 
 /// Simple CLI to create Ethereum block execution proofs.
@@ -112,9 +112,12 @@ async fn main() -> anyhow::Result<()> {
 
 fn setup_tracing() {
     tracing_subscriber::fmt()
+        .with_writer(std::io::stderr)
         .with_span_events(FmtSpan::CLOSE)
         .with_env_filter(
-            EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+            EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env_lossy(),
         )
         .init();
 }
