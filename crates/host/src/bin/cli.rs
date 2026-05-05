@@ -66,10 +66,8 @@ async fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
 
-    // ensure the cache directory exists
     fs::create_dir_all(&cli.cache_dir).context("failed to create cache directory")?;
 
-    // set up the provider and processor
     let provider =
         ProviderBuilder::new().connect(&cli.eth_rpc_url).await.context("RPC connection failed")?;
     let processor = BlockProcessor::new(provider).await?;
@@ -89,14 +87,11 @@ async fn main() -> anyhow::Result<()> {
         "Retrieved input for block",
     );
 
-    // always validate
-    {
-        let _guard = debug_span!("validate").entered();
-        processor.validate(input.clone()).context("host validation failed")?;
-    }
+    debug_span!("validate")
+        .in_scope(|| processor.validate(input.clone()))
+        .context("host validation failed")?;
     info!("Host validation successful");
 
-    // create proof if requested
     if let Commands::Prove(ProveCommand { segment_po2 }) = cli.command {
         let (receipt, image_id) = processor
             .prove(input, segment_po2)
