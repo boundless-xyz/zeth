@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(feature = "r0vm")]
 mod crypto;
 
 use alloy_primitives::{
@@ -29,8 +28,7 @@ use stateless::validation::StatelessValidationError;
 use std::{cell::RefCell, collections::hash_map::Entry, fmt::Debug, marker::PhantomData};
 use tries::{StatelessTrieError, WitnessDbError};
 
-#[cfg(feature = "r0vm")]
-pub use crypto::{R0vmCrypto, install_r0vm_crypto};
+pub use crypto::install_r0vm_crypto;
 pub use stateless::{ExecutionWitness, StatelessTrie, UncompressedPublicKey};
 
 pub type EthEvmConfig<C> = reth_evm_ethereum::EthEvmConfig<C, EthEvmFactory>;
@@ -108,7 +106,7 @@ where
         "only post-merge blocks supported"
     );
 
-    #[cfg(all(feature = "r0vm", target_os = "zkvm", target_vendor = "risc0"))]
+    #[cfg(all(target_os = "zkvm", target_vendor = "risc0"))]
     assert!(install_r0vm_crypto());
 
     let output = stateless::stateless_validation_with_trie::<SparseState, _, _>(
