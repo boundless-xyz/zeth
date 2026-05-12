@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1778605758959,
+  "lastUpdate": 1778623990634,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -737,6 +737,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "validation_cycles",
             "value": 689508121,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "welzwo@gmail.com",
+            "name": "Wolfgang Welz",
+            "username": "Wollac"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0a6b2d5b860572a799ecd814fa25e6029b34b838",
+          "message": "feat: Use risc0-crypto-evm for accelerated EVM precompiles (#238)\n\nReplace the inline `risc0-bigint2` glue in `zeth-core/src/crypto/`\n(BN254 / P-256 / modexp / ark-based host fallback) with the\n[`risc0-crypto-evm`](https://crates.io/crates/risc0-crypto-evm) crate.\nAdds an accelerated `secp256k1_ecrecover` precompile.\n\nRemoves `num-bigint`, `risc0-bigint2`, `risc0-zkp`, and `ark-bn254` /\n`ark-ec` / `ark-ff` / `ark-secp256r1` as direct dependencies of\n`zeth-core`. The `r0vm` cargo feature is dropped — `R0vmCrypto` installs\nunconditionally on the zkVM target via a target-gated code path.",
+          "timestamp": "2026-05-13T00:11:42+02:00",
+          "tree_id": "bea8a96b26f126db436caa8d7e3955932f263174",
+          "url": "https://github.com/boundless-xyz/zeth/commit/0a6b2d5b860572a799ecd814fa25e6029b34b838"
+        },
+        "date": 1778623990096,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 824705024,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 672728230,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 6192484,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 666509540,
             "unit": "cycles"
           }
         ]
