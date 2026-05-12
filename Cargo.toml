@@ -38,8 +38,8 @@ reth-network-peers = { git = "https://github.com/paradigmxyz/reth.git", tag = "v
 reth-primitives-traits = { version = "0.3", default-features = false }
 reth-revm = { git = "https://github.com/paradigmxyz/reth.git", tag = "v2.1.0", default-features = false }
 reth-trie-common = { git = "https://github.com/paradigmxyz/reth.git", tag = "v2.1.0", default-features = false }
-stateless = { git = "https://github.com/paradigmxyz/stateless.git", rev = "e5480e7" }
-tries = { git = "https://github.com/paradigmxyz/stateless.git", rev = "e5480e7" }
+stateless = { git = "https://github.com/paradigmxyz/stateless.git", rev = "6e55612" }
+tries = { git = "https://github.com/paradigmxyz/stateless.git", rev = "6e55612" }
 
 # alloy (2.x to match reth v2.1.0 + stateless)
 alloy = { version = "2.0" }
