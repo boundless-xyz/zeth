@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1778623990634,
+  "lastUpdate": 1778624619344,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -781,6 +781,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "validation_cycles",
             "value": 666509540,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "welzwo@gmail.com",
+            "name": "Wolfgang Welz",
+            "username": "Wollac"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "94748b0c83899a935a277d46266a437ed75c9ec7",
+          "message": "feat: Use patched ruint with accelerated modmul and modadd (#222)\n\nPin guest ruint to v1.18.0 and patch to the risc0 fork\n(`risc0/ruint v1.18.0-risczero.0`), which provides accelerated\nmodmul and modadd via `risc0-bigint2`.",
+          "timestamp": "2026-05-13T00:20:46+02:00",
+          "tree_id": "74446cbee1c873c1eeab655cf0568909fd4f3340",
+          "url": "https://github.com/boundless-xyz/zeth/commit/94748b0c83899a935a277d46266a437ed75c9ec7"
+        },
+        "date": 1778624618531,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 823132160,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 671376895,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 6192484,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 665158205,
             "unit": "cycles"
           }
         ]
