@@ -27,7 +27,7 @@ use alloy::{
 use anyhow::{Context, Result};
 use reth_evm::{ConfigureEvm, execute::Executor};
 use reth_primitives_traits::{Block, BlockBody, NodePrimitives};
-use reth_stateless::ExecutionWitness;
+use stateless::ExecutionWitness;
 use std::collections::HashSet;
 use tracing::{Span, debug};
 

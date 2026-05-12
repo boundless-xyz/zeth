@@ -19,7 +19,7 @@ use alloy::{
     providers::Provider,
 };
 use anyhow::{Context, Result, bail};
-use reth_revm::db::StorageWithOriginalValues;
+use reth_revm::revm::database::StorageWithOriginalValues;
 use risc0_ethereum_trie::{Nibbles, Trie, orphan};
 use std::collections::HashSet;
 use tracing::{debug, trace};

@@ -34,7 +34,7 @@ mod host_impl;
 mod modexp;
 
 use num_bigint::BigUint;
-use reth_evm::revm::precompile::{Crypto, DefaultCrypto, PrecompileError, install_crypto};
+use reth_evm::revm::precompile::{Crypto, DefaultCrypto, PrecompileHalt, install_crypto};
 
 #[cfg(not(all(target_os = "zkvm", target_vendor = "risc0")))]
 use host_impl::*;
@@ -72,7 +72,7 @@ impl Crypto for R0vmCrypto {
     }
 
     #[inline]
-    fn modexp(&self, base: &[u8], exp: &[u8], modulus: &[u8]) -> Result<Vec<u8>, PrecompileError> {
+    fn modexp(&self, base: &[u8], exp: &[u8], modulus: &[u8]) -> Result<Vec<u8>, PrecompileHalt> {
         let len = modulus.len();
         if len <= 32 {
             return Ok(modexp::modexp_generic(base, exp, modulus, field::unchecked::modmul_256));
@@ -87,13 +87,13 @@ impl Crypto for R0vmCrypto {
     }
 
     #[inline]
-    fn bn254_g1_add(&self, p1: &[u8], p2: &[u8]) -> Result<[u8; 64], PrecompileError> {
-        ec::bn254::add(p1, p2).ok_or(PrecompileError::Bn254AffineGFailedToCreate)
+    fn bn254_g1_add(&self, p1: &[u8], p2: &[u8]) -> Result<[u8; 64], PrecompileHalt> {
+        ec::bn254::add(p1, p2).ok_or(PrecompileHalt::Bn254AffineGFailedToCreate)
     }
 
     #[inline]
-    fn bn254_g1_mul(&self, point: &[u8], scalar: &[u8]) -> Result<[u8; 64], PrecompileError> {
-        ec::bn254::mul(point, scalar).ok_or(PrecompileError::Bn254AffineGFailedToCreate)
+    fn bn254_g1_mul(&self, point: &[u8], scalar: &[u8]) -> Result<[u8; 64], PrecompileHalt> {
+        ec::bn254::mul(point, scalar).ok_or(PrecompileHalt::Bn254AffineGFailedToCreate)
     }
 
     #[inline]

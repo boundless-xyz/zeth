@@ -21,8 +21,8 @@ use alloy::{
 use alloy_primitives::{Address, B256, BlockHash, StorageKey, U256, map::B256HashMap};
 use reth_revm::{
     Database as RevmDatabase,
-    db::DBErrorMarker,
     primitives::KECCAK_EMPTY,
+    revm::context::DBErrorMarker,
     state::{AccountInfo, Bytecode},
 };
 use std::{future::IntoFuture, marker::PhantomData};

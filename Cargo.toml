@@ -5,7 +5,7 @@ members = ["crates/*", "guests"]
 [workspace.package]
 version = "0.3.0"
 edition = "2024"
-rust-version = "1.85"
+rust-version = "1.93"
 license = "Apache-2.0"
 repository = "https://github.com/boundless-xyz/zeth"
 
@@ -28,35 +28,34 @@ risc0-build = "3.0.5"
 risc0-zkp = "3.0.4"
 risc0-zkvm = "3.0.5"
 
-# reth
-reth-chainspec = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10.2" }
-reth-errors = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10.2" }
-reth-ethereum-forks = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10.2" }
-reth-ethereum-primitives = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10.2" }
-reth-evm = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10.2" }
-reth-evm-ethereum = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10.2" }
-reth-network-peers = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10.2" }
-reth-primitives = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10.2" }
-reth-primitives-traits = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10.2" }
-reth-revm = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10.2" }
-reth-stateless = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10.2" }
-reth-trie-common = { git = "https://github.com/paradigmxyz/reth.git", tag = "v1.10.2" }
+# reth (pinned to v2.1.0 to match stateless below)
+reth-chainspec = { git = "https://github.com/paradigmxyz/reth.git", tag = "v2.1.0", default-features = false }
+reth-ethereum-forks = { git = "https://github.com/paradigmxyz/reth.git", tag = "v2.1.0", default-features = false }
+reth-ethereum-primitives = { git = "https://github.com/paradigmxyz/reth.git", tag = "v2.1.0", default-features = false }
+reth-evm = { git = "https://github.com/paradigmxyz/reth.git", tag = "v2.1.0", default-features = false }
+reth-evm-ethereum = { git = "https://github.com/paradigmxyz/reth.git", tag = "v2.1.0", default-features = false }
+reth-network-peers = { git = "https://github.com/paradigmxyz/reth.git", tag = "v2.1.0", default-features = false }
+reth-primitives-traits = { version = "0.3", default-features = false }
+reth-revm = { git = "https://github.com/paradigmxyz/reth.git", tag = "v2.1.0", default-features = false }
+reth-trie-common = { git = "https://github.com/paradigmxyz/reth.git", tag = "v2.1.0", default-features = false }
+stateless = { git = "https://github.com/paradigmxyz/stateless.git", rev = "6e55612" }
+tries = { git = "https://github.com/paradigmxyz/stateless.git", rev = "6e55612" }
 
-# alloy
-alloy = { version = "1.4.3" }
-alloy-eips = { version = "1.4.3", default-features = false }
-alloy-genesis = { version = "1.4.3", default-features = false }
-alloy-primitives = { version = "1.5.0" }
-alloy-rlp = { version = "0.3.10", default-features = false }
+# alloy (2.x to match reth v2.1.0 + stateless)
+alloy = { version = "2.0" }
+alloy-eips = { version = "2.0", default-features = false }
+alloy-genesis = { version = "2.0", default-features = false }
+alloy-primitives = { version = "1.5" }
+alloy-rlp = { version = "0.3.8", default-features = false }
 
 # trie
 risc0-ethereum-trie = { git = "https://github.com/risc0/risc0-ethereum.git", tag = "v3.0.1" }
 
 # arkworks
-ark-bn254 = "0.5"
-ark-ec = "0.5"
-ark-ff = "0.5"
-ark-secp256r1 = "0.5"
+ark-bn254 = "0.6"
+ark-ec = "0.6"
+ark-ff = "0.6"
+ark-secp256r1 = "0.6"
 
 # misc
 anyhow = "1.0"
@@ -69,8 +68,8 @@ humansize = "2.1"
 itertools = "0.14"
 num-bigint = "0.4"
 serde = "1.0"
-serde_with = "3.14"
 serde_json = "1.0"
+serde_with = "3"
 sha2 = "0.10"
 tempfile = "3.25"
 thiserror = "2"
