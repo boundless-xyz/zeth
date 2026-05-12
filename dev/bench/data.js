@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1777994585931,
+  "lastUpdate": 1778605758959,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -693,6 +693,50 @@ window.BENCHMARK_DATA = {
           {
             "name": "validation_cycles",
             "value": 705179112,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "welzwo@gmail.com",
+            "name": "Wolfgang Welz",
+            "username": "Wollac"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "38510604003844fa426f034c33639322a6a7b9ff",
+          "message": "chore: Update reth to v2.1.0 (#231)\n\n* chore: Update reth to v2.0.0\n\n- Bump reth deps to post-v2.0.0 rev (matching paradigmxyz/stateless)\n- Use `stateless` crate from paradigmxyz/stateless (replaces reth-stateless)\n- Use RLP encoding for block serialization (replaces serde_bincode_compat)\n- Bump Rust toolchain to 1.94, alloy to 1.8, blst to 0.3.16\n- Disable default features on reth crates to avoid quanta in guest\n\n* chore: Clean up dependencies and imports\n\n- Remove unused alloy-trie and serde_with workspace deps\n- Pin alloy-rlp to >=0.3.8 (introduces decode_exact)\n- Import TrieAccount from reth_trie_common instead of inline paths\n- Fix rust-version MSRV to 1.93 (required by reth-trie-common)\n- Run cargo sort --grouped\n\n* build(deps): update all dependencies\n\n* fix: Pin guest revm to ^36.0.0 to match reth\n\nUsing `*` resolved to revm 37 which is incompatible with reth's v36,\ncausing duplicate revm crates and losing accelerated crypto precompiles.\n\n* chore: Remove unused serde_with workspace dependency\n\n* fix: Restore legacy cache migration and use default Block serde for JSON\n\n- Restore v2 cache format migration that was removed in the reth v2.0.0\n  update, so existing cached inputs are loaded without re-fetching from RPC\n- Use Block's default serde for human-readable formats (JSON) instead of\n  RLP hex encoding, making cache files inspectable\n- Keep RLP encoding for binary formats (risc0 zkVM) where Block's default\n  serde is incompatible\n\n* build(deps): Regenerate lockfiles\n\n* chore: Move serde-bincode-compat features to host crate\n\n* fix: Restore v1 and v2 legacy cache migration\n\nRevert host/lib.rs to main's migration infrastructure, then adapt for\nthe reth v2.0.0 type changes. Both v1 (no signers) and v2 (with signers,\nserde_bincode_compat format) are now migrated to v3 on first access.\n\n* refactor: Extract cache module and use reth-primitives-traits v1 for legacy migration\n\n- Move cache format handling (load, save, versioned formats) from lib.rs\n  into its own cache.rs module\n- Use reth-primitives-traits v1.11.3 (as reth-primitives-traits-v1) for\n  deserializing the serde_bincode_compat block format in v1/v2 cache files\n- Remove alloy-consensus direct dependency (no longer needed)\n\n* build(deps): Regenerate lockfiles\n\n* fix: Export ETH_RPC_URL so parallel subshells inherit it\n\nAlso regenerate lockfile with latest dependency updates.\n\n* docs: Update changelog with missing entries since v0.3.0\n\n* build(deps): Pin guest alloy-primitives and switch c-kzg to risc0 fork\n\nPin alloy-primitives to 1.5.3 instead of \"*\"; 1.5.3 is the first release\nwhere the tiny-keccak feature flag actually takes effect (default keccak\nswitched from tiny-keccak to sha3, dep became optional).\n\nSwitch the c-kzg patch from the interim Wollac fork to the now-available\nrisc0/c-kzg-4844 v2.1.7-risczero.0 tag.\n\n* chore: Update reth to v2.1.0\n\nBump all reth-* workspace git deps from rev adc960162f to tag v2.1.0,\nreth-primitives-traits 0.1 -> 0.3, alloy 1.8 -> 2.0, guest revm 36.0.0\n-> 38.0.0. Repoint stateless/tries at Wollac/stateless with the matching\nv2.1.0 bump pending upstream merge (paradigmxyz/stateless).\n\nCode ports required by the bump:\n\n- crates/core/src/lib.rs: stateless_validation_with_trie now returns a\n  StatelessValidationOutput struct instead of a tuple; pull .block_hash.\n- crates/core/src/crypto/mod.rs: revm 38 moved precompile error variants\n  to PrecompileHalt; Crypto trait methods return Result<_, PrecompileHalt>\n  and the Bn254AffineGFailedToCreate variant lives there.\n- crates/host/src/cache.rs: legacy v1/v2 cache readers now deserialize\n  into v1-typed reth_ethereum_primitives_v1::Block, then RLP-roundtrip\n  into the workspace Block type. Necessary because alloy jumped 1.x -> 2.x\n  between reth v2.0.0 and v2.1.0, so v1 bincode-compat types cannot be\n  directly assigned to v2 workspace types. Adds reth-ethereum-primitives-v1\n  alias (tag v1.11.3) and alloy-rlp to zeth-host.\n\n* build(deps): Switch stateless to upstream paradigmxyz/stateless\n\nThe fork at Wollac/stateless has been merged; point at the upstream\nrepo's main branch (rev e5480e7).\n\n* cargo update\n\n* build(deps): Bump stateless to 6e55612 and refresh lockfiles\n\nStateless main is still pinned to reth v2.1.0, so reth stays put. The two\nnew stateless commits are a validation error refactor (InvalidAncestorChain\nsplit, not referenced here) and a cargo update.\n\ncargo update touches alloy 1.6.3 -> 1.8.3, tokio 1.49 -> 1.52,\nc-kzg 2.1.5 -> 2.1.7 (host only; guest stays pinned to match the risc0\nfork), revm-primitives 22.0 -> 22.1, and a long tail of patch bumps.\n\n* build(deps): Bump arkworks group to 0.6\n\nark-bn254, ark-ec, ark-ff, ark-secp256r1: 0.5 -> 0.6. API surface used\n(AffineRepr, CurveGroup, short_weierstrass, BigInteger, PrimeField, and\nthe curve Configs) is unchanged; check, clippy, and the full RISC0_DEV_MODE\ntest suite all pass.\n\nSupersedes #241.\n\n* update Cargo.lock",
+          "timestamp": "2026-05-12T19:03:11+02:00",
+          "tree_id": "496a91704d1de0f6a6d8d33b8dca01f9310e0a97",
+          "url": "https://github.com/boundless-xyz/zeth/commit/38510604003844fa426f034c33639322a6a7b9ff"
+        },
+        "date": 1778605758021,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 851968000,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 695726778,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 6192484,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 689508121,
             "unit": "cycles"
           }
         ]
