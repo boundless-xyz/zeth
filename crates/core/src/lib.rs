@@ -200,7 +200,7 @@ impl StatelessTrie for SparseState {
         witness: &ExecutionWitness,
         pre_state_root: B256,
     ) -> Result<(Self, B256IndexMap<Bytecode>), StatelessTrieError> {
-        // fist, hash all the RLP nodes once
+        // first, hash all the RLP nodes once
         let rlp_by_digest: B256Map<_> =
             witness.state.iter().map(|rlp| (keccak256(rlp), rlp.clone())).collect();
 

@@ -85,7 +85,7 @@ impl<D> Debug for PreflightDb<D> {
 }
 
 impl<D> PreflightDb<D> {
-    /// Creates a new ProofDb instance, with a [RevmDatabase].
+    /// Creates a new PreflightDb instance, with a [RevmDatabase].
     pub(crate) fn new(db: D) -> Self
     where
         D: RevmDatabase,

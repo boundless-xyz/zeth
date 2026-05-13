@@ -80,7 +80,7 @@ impl Default for ProviderConfig {
 }
 
 impl<N: Network, P: Provider<N>> ProviderDb<N, P> {
-    /// Creates a new AlloyDb instance, with a [Provider] and a block.
+    /// Creates a new ProviderDb instance, with a [Provider] and a block.
     ///
     /// This will panic if called outside the context of a Tokio runtime.
     pub(crate) fn new(provider: P, config: ProviderConfig, block_hash: BlockHash) -> Self {
