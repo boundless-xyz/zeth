@@ -13,11 +13,10 @@
 // limitations under the License.
 
 use super::tracer::CycleTracer;
-use reth_errors::BlockExecutionError;
 use reth_evm::{
     ConfigureEvm, Database, EvmEnvFor, EvmFactory, ExecutionCtxFor, OnStateHook,
     block::{BlockExecutionResult, BlockExecutorFactory, BlockExecutorFor},
-    execute::{BlockExecutor, Executor},
+    execute::{BlockExecutionError, BlockExecutor, Executor},
     revm::{
         Inspector,
         context::{ContextTr, JournalTr},
@@ -106,15 +105,14 @@ where
 }
 
 struct CycleTrackerBlockExecutor<F, DB> {
-    factory: F,
+    strategy_factory: F,
     db: State<DB>,
 }
 
 impl<F, DB: Database> CycleTrackerBlockExecutor<F, DB> {
-    pub(crate) fn new(factory: F, db: DB) -> Self {
-        let db =
-            State::builder().with_database(db).with_bundle_update().without_state_clear().build();
-        Self { factory, db }
+    pub(crate) fn new(strategy_factory: F, db: DB) -> Self {
+        let db = State::builder().with_database(db).with_bundle_update().build();
+        Self { strategy_factory, db }
     }
 }
 
@@ -133,18 +131,19 @@ where
         impl BlockExecutorFor<
             'a,
             <F as ConfigureEvm>::BlockExecutorFactory,
-            DB,
+            &'a mut State<DB>,
             CycleTrackerInspector<'a>,
         >,
         <F as ConfigureEvm>::Error,
     > {
-        let evm_env = self.factory.evm_env(block.header())?;
+        let evm_env = self.strategy_factory.evm_env(block.header())?;
 
         let inspector = CycleTrackerInspector::default();
-        let evm = self.factory.evm_with_env_and_inspector(&mut self.db, evm_env, inspector);
+        let evm =
+            self.strategy_factory.evm_with_env_and_inspector(&mut self.db, evm_env, inspector);
 
-        let ctx = self.factory.context_for_block(block)?;
-        Ok(self.factory.create_executor(evm, ctx))
+        let ctx = self.strategy_factory.context_for_block(block)?;
+        Ok(self.strategy_factory.create_executor(evm, ctx))
     }
 }
 
@@ -216,13 +215,13 @@ impl<CTX: ContextTr> Inspector<CTX> for CycleTrackerInspector<'_> {
 
         // keep track of the last opcode executed
         self.last_opcode = Some(opcode);
-        self.tracer.enter_with_gas(opcode, interp.gas.spent())
+        self.tracer.enter_with_gas(opcode, interp.gas.total_gas_spent())
     }
 
     #[inline]
     fn step_end(&mut self, interp: &mut Interpreter, _context: &mut CTX) {
         if let Some(opcode) = self.last_opcode.take() {
-            let mut gas = interp.gas.spent();
+            let mut gas = interp.gas.total_gas_spent();
 
             // Calls and creations include the gas limit in the gas cost. We need to subtract this
             // amount because we want to track how much gas the opcode itself consumes.
@@ -251,7 +250,8 @@ impl<CTX: ContextTr> Inspector<CTX> for CycleTrackerInspector<'_> {
     #[inline]
     fn call_end(&mut self, _context: &mut CTX, inputs: &CallInputs, outcome: &mut CallOutcome) {
         if self.in_precompile {
-            self.tracer.exit_with_gas(inputs.bytecode_address, outcome.result.gas.spent());
+            self.tracer
+                .exit_with_gas(inputs.bytecode_address, outcome.result.gas.total_gas_spent());
         }
     }
 }
