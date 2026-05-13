@@ -12,24 +12,31 @@ unsafe-pre-merge = ["guests/unsafe-pre-merge", "zeth-core/unsafe-pre-merge"]
 
 [dependencies]
 alloy = { workspace = true, features = ["provider-debug-api"] }
+alloy-rlp = { workspace = true }
 anyhow = { workspace = true }
 blst = { workspace = true }
 bytemuck = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
 flate2 = { workspace = true, optional = true }
 guests = { workspace = true }
+humansize = { workspace = true }
 reth-chainspec = { workspace = true }
 reth-ethereum-primitives = { workspace = true }
 reth-evm = { workspace = true, optional = true }
-reth-stateless = { workspace = true }
+# Pinned v1 aliases used only for deserializing legacy v1/v2 cache files (bincode-compat
+# format from reth v1, which uses alloy 1.x types). The resulting v1 block is re-encoded
+# via RLP and decoded back into the workspace (v2+) block type.
+reth-ethereum-primitives-v1 = { package = "reth-ethereum-primitives", git = "https://github.com/paradigmxyz/reth.git", tag = "v1.11.3", default-features = false, features = ["serde", "serde-bincode-compat"] }
+reth-primitives-traits-v1 = { package = "reth-primitives-traits", git = "https://github.com/paradigmxyz/reth.git", tag = "v1.11.3", features = ["serde-bincode-compat"] }
 risc0-zkvm = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 serde_with = { workspace = true }
+stateless = { workspace = true }
 tempfile = { workspace = true }
 tokio = { workspace = true }
 tracing = { workspace = true }
-tracing-subscriber = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
 zeth-core = { workspace = true }
 
 [dev-dependencies]

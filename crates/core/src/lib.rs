@@ -12,44 +12,79 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[cfg(feature = "r0vm")]
 mod crypto;
 
-use alloy_primitives::{Address, B256, Bytes, KECCAK256_EMPTY, U256, keccak256, map::B256Map};
+use alloy_primitives::{
+    Address, B256, Bytes, KECCAK256_EMPTY, U256, keccak256,
+    map::{B256IndexMap, B256Map},
+};
 use reth_chainspec::{EthChainSpec, Hardforks};
-use reth_errors::ProviderError;
 use reth_ethereum_primitives::Block;
 use reth_evm::{EthEvmFactory, eth::spec::EthExecutorSpec, revm::bytecode::Bytecode};
 use reth_primitives_traits::Header;
-use reth_stateless::validation::StatelessValidationError;
 use reth_trie_common::{EMPTY_ROOT_HASH, HashedPostState, TrieAccount};
 use risc0_ethereum_trie::CachedTrie;
+use stateless::validation::StatelessValidationError;
 use std::{cell::RefCell, collections::hash_map::Entry, fmt::Debug, marker::PhantomData};
+use tries::{StatelessTrieError, WitnessDbError};
 
-#[cfg(feature = "r0vm")]
-pub use crypto::{R0vmCrypto, install_r0vm_crypto};
-pub use reth_stateless::{ExecutionWitness, StatelessTrie, UncompressedPublicKey};
+pub use crypto::install_r0vm_crypto;
+pub use stateless::{ExecutionWitness, StatelessTrie, UncompressedPublicKey};
 
 pub type EthEvmConfig<C> = reth_evm_ethereum::EthEvmConfig<C, EthEvmFactory>;
 
 #[cfg(feature = "cycle-tracker")]
 pub mod cycle_tracker;
 
-pub mod serde_bincode_compat {
-    pub type Block<'a> = reth_primitives_traits::serde_bincode_compat::Block<
-        'a,
-        reth_ethereum_primitives::TransactionSigned,
-        reth_primitives_traits::Header,
-    >;
+/// Serde adapter for [`Block`] that uses RLP encoding for binary serializers.
+///
+/// Human-readable formats (JSON) use `Block`'s default serde. Binary formats (risc0 zkVM)
+/// use RLP encoding because `Block`'s default serde is incompatible with risc0's serializer.
+mod rlp_block {
+    use reth_ethereum_primitives::Block;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
+
+    pub(super) fn serialize<S: Serializer>(block: &Block, s: S) -> Result<S::Ok, S::Error> {
+        if s.is_human_readable() {
+            block.serialize(s)
+        } else {
+            s.serialize_bytes(&alloy_rlp::encode(block))
+        }
+    }
+
+    pub(super) fn deserialize<'de, D: Deserializer<'de>>(d: D) -> Result<Block, D::Error> {
+        if d.is_human_readable() {
+            Block::deserialize(d)
+        } else {
+            d.deserialize_byte_buf(RlpBytesVisitor)
+        }
+    }
+
+    struct RlpBytesVisitor;
+
+    impl<'de> de::Visitor<'de> for RlpBytesVisitor {
+        type Value = Block;
+
+        fn expecting(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+            f.write_str("RLP-encoded block bytes")
+        }
+
+        fn visit_bytes<E: de::Error>(self, v: &[u8]) -> Result<Block, E> {
+            alloy_rlp::decode_exact(v).map_err(E::custom)
+        }
+
+        fn visit_byte_buf<E: de::Error>(self, v: Vec<u8>) -> Result<Block, E> {
+            self.visit_bytes(&v)
+        }
+    }
 }
 
-/// `StatelessInput` is a convenience structure for serializing the input needed
+/// `Input` is a convenience structure for serializing the input needed
 /// for the stateless validation function.
-#[serde_with::serde_as]
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Input {
     /// The block being executed in the stateless validation function
-    #[serde_as(as = "serde_bincode_compat::Block")]
+    #[serde(with = "rlp_block")]
     pub block: Block,
     /// List of signing public keys for each transaction in the block.
     pub signers: Vec<UncompressedPublicKey>,
@@ -74,17 +109,17 @@ where
         "only post-merge blocks supported"
     );
 
-    #[cfg(all(feature = "r0vm", target_os = "zkvm", target_vendor = "risc0"))]
+    #[cfg(all(target_os = "zkvm", target_vendor = "risc0"))]
     assert!(install_r0vm_crypto());
 
     #[cfg(all(feature = "cycle-tracker", target_os = "zkvm", target_vendor = "risc0"))]
     let config = cycle_tracker::guest::CycleTrackerEvmConfig::new(config);
 
-    let (hash, _) = reth_stateless::stateless_validation_with_trie::<SparseState, _, _>(
+    let output = stateless::stateless_validation_with_trie::<SparseState, _, _>(
         block, signers, witness, chain_spec, config,
     )?;
 
-    Ok(hash)
+    Ok(output.block_hash)
 }
 
 /// Zero-overhead helper for tries that only contain RLP encoded data.
@@ -170,14 +205,14 @@ impl StatelessTrie for SparseState {
     fn new(
         witness: &ExecutionWitness,
         pre_state_root: B256,
-    ) -> Result<(Self, B256Map<Bytecode>), StatelessValidationError> {
+    ) -> Result<(Self, B256IndexMap<Bytecode>), StatelessTrieError> {
         // fist, hash all the RLP nodes once
         let rlp_by_digest: B256Map<_> =
             witness.state.iter().map(|rlp| (keccak256(rlp), rlp.clone())).collect();
 
         // construct the state trie from the witness data and the given state root
         let state = RlpTrie::from_prehashed(pre_state_root, &rlp_by_digest)
-            .map_err(|_| StatelessValidationError::WitnessRevealFailed { pre_state_root })?;
+            .map_err(|_| StatelessTrieError::WitnessRevealFailed { pre_state_root })?;
 
         // hash all the supplied bytecode
         let bytecode = witness
@@ -190,7 +225,7 @@ impl StatelessTrie for SparseState {
     }
 
     /// Returns the `TrieAccount` that corresponds to the `Address`.
-    fn account(&self, address: Address) -> Result<Option<TrieAccount>, ProviderError> {
+    fn account(&self, address: Address) -> Result<Option<TrieAccount>, WitnessDbError> {
         let hashed_address = keccak256(address);
         match self.state.get(hashed_address)? {
             None => Ok(None),
@@ -213,7 +248,7 @@ impl StatelessTrie for SparseState {
     }
 
     /// Returns the storage slot value that corresponds to the given (address, slot) tuple.
-    fn storage(&self, address: Address, slot: U256) -> Result<U256, ProviderError> {
+    fn storage(&self, address: Address, slot: U256) -> Result<U256, WitnessDbError> {
         let storages = self.storages.borrow();
         // storage() is always be called after account(), so the storage trie must already exist
         let storage_trie = storages.get(&keccak256(address)).unwrap();
@@ -221,10 +256,7 @@ impl StatelessTrie for SparseState {
     }
 
     /// Computes the new state root from the HashedPostState.
-    fn calculate_state_root(
-        &mut self,
-        state: HashedPostState,
-    ) -> Result<B256, StatelessValidationError> {
+    fn calculate_state_root(&mut self, state: HashedPostState) -> Result<B256, StatelessTrieError> {
         let mut removed_accounts = Vec::new();
         for (hashed_address, account) in state.accounts {
             // nonexisting accounts must be removed from the state

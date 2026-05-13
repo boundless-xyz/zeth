@@ -7,16 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Update core dependency to Reth `v2.0.0` and Rust toolchain to `v1.94`.
 - Update zkVM dependency to r0vm `v3.0.5`.
 
 ### ⚡️ Features
 
-- Add R0VM-optimized `modexp` precompile using `risc0-bigint2` for accelerated modular exponentiation (up to 4096-bit).
-- Add R0VM-optimized `secp256r1_verify_signature` precompile using `risc0-bigint2` for accelerated P-256 ECDSA verification (EIP-7951).
+- Add R0VM-accelerated `modexp` (up to 4096-bit), `secp256r1_verify_signature` (EIP-7951), `secp256k1_ecrecover`, `BN254_ADD` / `BN254_MUL` (EIP-196), and SHA-256 precompiles via [`risc0-crypto-evm`](https://crates.io/crates/risc0-crypto-evm).
+- Add `get_input_cached` method for processing blocks from cache without RPC.
+- Add support for running against an Anvil devnet when using the RPC proxy.
 
 ### ⚙️ Miscellaneous
 
 - Add Hoodi support and remove Holešky.
+- Increase default keep-alive on `zeth-rpc-proxy`.
 
 ## [0.3.0](https://github.com/boundless-xyz/zeth/releases/tag/v0.3.0) - 2025-12-03
 
