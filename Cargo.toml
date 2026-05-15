@@ -44,7 +44,7 @@ tries = { git = "https://github.com/paradigmxyz/stateless.git", rev = "6e55612" 
 alloy = { version = "2.0" }
 alloy-eips = { version = "2.0", default-features = false }
 alloy-genesis = { version = "2.0", default-features = false }
-alloy-primitives = { version = "1.5" }
+alloy-primitives = { version = "1.6" }
 alloy-rlp = { version = "0.3.8", default-features = false }
 
 # trie
