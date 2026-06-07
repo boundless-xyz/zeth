@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1778624619344,
+  "lastUpdate": 1780827271177,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -805,6 +805,50 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/boundless-xyz/zeth/commit/94748b0c83899a935a277d46266a437ed75c9ec7"
         },
         "date": 1778624618531,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 823132160,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 671376895,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 6192484,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 665158205,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "sunnyraindy@outlook.com",
+            "name": "sunnyraindy",
+            "username": "sunnyraindy"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "0facb9ad77ce666897b42e006459a31becc3fb2d",
+          "message": "chore: fix some comments to improve readability (#244)\n\nSigned-off-by: sunnyraindy <sunnyraindy@outlook.com>",
+          "timestamp": "2026-06-07T12:07:56+02:00",
+          "tree_id": "f00ee2535d5a76ed2e6992cb23ffc620c3f62226",
+          "url": "https://github.com/boundless-xyz/zeth/commit/0facb9ad77ce666897b42e006459a31becc3fb2d"
+        },
+        "date": 1780827270458,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
