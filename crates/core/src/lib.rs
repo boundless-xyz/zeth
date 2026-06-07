@@ -33,6 +33,9 @@ pub use stateless::{ExecutionWitness, StatelessTrie, UncompressedPublicKey};
 
 pub type EthEvmConfig<C> = reth_evm_ethereum::EthEvmConfig<C, EthEvmFactory>;
 
+#[cfg(feature = "cycle-tracker")]
+pub mod cycle_tracker;
+
 /// Serde adapter for [`Block`] that uses RLP encoding for binary serializers.
 ///
 /// Human-readable formats (JSON) use `Block`'s default serde. Binary formats (risc0 zkVM)
@@ -108,6 +111,9 @@ where
 
     #[cfg(all(target_os = "zkvm", target_vendor = "risc0"))]
     assert!(install_r0vm_crypto());
+
+    #[cfg(all(feature = "cycle-tracker", target_os = "zkvm", target_vendor = "risc0"))]
+    let config = cycle_tracker::guest::CycleTrackerEvmConfig::new(config);
 
     let output = stateless::stateless_validation_with_trie::<SparseState, _, _>(
         block, signers, witness, chain_spec, config,
