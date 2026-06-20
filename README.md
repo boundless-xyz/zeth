@@ -87,7 +87,7 @@ ETH_RPC_URL="<YOUR_RPC_URL>" cargo run --release --bin cli -- validate
 
 #### Validate a specific block by number
 ```bash
-ETH_RPC_URL="<YOUR_RPC_URL>" cargo run --release --bin cli -- validate
+ETH_RPC_URL="<YOUR_RPC_URL>" cargo run --release --bin cli -- --block 19000000 validate
 ```
 
 Upon first run, this will fetch the necessary data from the RPC and save it to the cache/ directory. Subsequent runs for the same block will be much faster as they will use the cached data.
@@ -105,7 +105,7 @@ ETH_RPC_URL="<YOUR_RPC_URL>" cargo run --release --bin cli -- prove
 
 #### Generate a mock proof for a specific block
 ```bash
-RISC0_DEV_MODE=1 ETH_RPC_URL="<YOUR_RPC_URL>" cargo run --release --bin cli -- prove 19000000
+RISC0_DEV_MODE=1 ETH_RPC_URL="<YOUR_RPC_URL>" cargo run --release --bin cli -- --block 19000000 prove
 ```
 
 #### Proving Pre-Merge (Proof-of-Work) Blocks
@@ -114,7 +114,7 @@ By default, Zeth only supports proving post-merge (Proof-of-Stake) blocks. This 
 
 For development and research purposes, you can enable the proving of historical blocks by using the `unsafe-pre-merge` feature flag:
 ```bash
-ETH_RPC_URL="<YOUR_RPC_URL>" cargo run --release --bin cli --features "unsafe-pre-merge" -- prove --block 1
+ETH_RPC_URL="<YOUR_RPC_URL>" cargo run --release --bin cli --features "unsafe-pre-merge" -- --block 1 prove
 ```
 
 **Warning**: Proofs generated with this flag are not fully sound and should not be used in production.
