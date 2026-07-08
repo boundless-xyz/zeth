@@ -70,7 +70,7 @@ struct AccountProof {
 struct StorageProof {
     /// The value that this key holds.
     value: StorageValue,
-    /// In MPT inclusion proof for this particular slot.
+    /// An MPT inclusion proof for this particular slot.
     proof: Vec<Bytes>,
 }
 
