@@ -119,6 +119,27 @@ ETH_RPC_URL="<YOUR_RPC_URL>" cargo run --release --bin cli --features "unsafe-pr
 
 **Warning**: Proofs generated with this flag are not fully sound and should not be used in production.
 
+## Cycle Profiling
+
+Zeth includes an optional `cycle-tracker` feature that allows you to profile the execution of blocks inside the zkVM. This generates detailed reports on how many cycles are spent on each EVM opcode and precompile.
+
+### Enabling the Tracker
+
+To use this feature, you must build the project with the `cycle-tracker` feature flag enabled:
+```bash
+cargo build --release --features cycle-tracker
+````
+
+When running the prover with this feature, you can set the `TRACE_FILE` environment variable to specify the output path for the raw trace data (defaults to `trace.json.gz`).
+The output is a Gzip-compressed JSON file containing a map of trace identifiers (e.g., opcode names) to lists of (cycles, gas) usage tuples.
+
+### Analysis Scripts
+
+Two Python scripts are provided in the `scripts/` directory to help with benchmarking and profiling. **Note:** These scripts operate on cached input files, so ensure you have populated your `cache/` directory (e.g., by running `cli validate` on target blocks) before running them.
+
+* **`scripts/trace.py`**: Automates the process of building Zeth with the tracker enabled, running proofs for all cached blocks, and aggregating the cycle usage data into a CSV file (`opcode-profile.csv`).
+* **`scripts/benchmark.py`**: Builds Zeth *without* the tracker (for maximum performance) and measures wall-clock execution time and total cycle counts for cached blocks.
+
 ## Additional Resources
 
 * [RISC Zero Developer Portal](https://dev.risczero.com/)

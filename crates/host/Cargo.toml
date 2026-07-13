@@ -7,6 +7,7 @@ license = { workspace = true }
 repository = { workspace = true }
 
 [features]
+cycle-tracker = ["flate2", "reth-evm", "guests/cycle-tracker", "zeth-core/cycle-tracker"]
 unsafe-pre-merge = ["guests/unsafe-pre-merge", "zeth-core/unsafe-pre-merge"]
 
 [dependencies]
@@ -16,10 +17,12 @@ anyhow = { workspace = true }
 blst = { workspace = true }
 bytemuck = { workspace = true }
 clap = { workspace = true, features = ["derive", "env"] }
+flate2 = { workspace = true, optional = true }
 guests = { workspace = true }
 humansize = { workspace = true }
 reth-chainspec = { workspace = true }
 reth-ethereum-primitives = { workspace = true }
+reth-evm = { workspace = true, optional = true }
 # Pinned v1 aliases used only for deserializing legacy v1/v2 cache files (bincode-compat
 # format from reth v1, which uses alloy 1.x types). The resulting v1 block is re-encoded
 # via RLP and decoded back into the workspace (v2+) block type.

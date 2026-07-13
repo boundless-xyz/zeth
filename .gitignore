@@ -16,4 +16,9 @@ target
 .idea/
 
 .DS_Store
+
+# Zeth specific
 /cache/
+/block-benchmarks.csv
+/opcode-profile.csv
+/trace.json.gz

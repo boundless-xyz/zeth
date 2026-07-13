@@ -12,18 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![deny(unsafe_code)]
+#[cfg(not(target_os = "zkvm"))]
+mod collector;
+mod evm;
+mod tracer;
+mod types;
 
-use risc0_zkvm::guest::env;
-use zeth_chainspec::ChainSpec;
-use zeth_core::{EthEvmConfig, Input, validate_block};
+pub use types::{CYCLE_TRACKER_FD, TraceId};
 
-pub fn entry(evm_config: EthEvmConfig<ChainSpec>) {
-    let chain_spec = evm_config.chain_spec();
-    env::log(&format!("EVM config: {chain_spec}"));
+#[cfg(not(target_os = "zkvm"))]
+pub use collector::{TraceCollector, TraceEvent};
 
-    let input: Input = env::read();
-    let block_hash = validate_block(input, evm_config).unwrap();
-
-    env::commit_slice(block_hash.as_slice());
+pub mod guest {
+    pub use super::{
+        evm::CycleTrackerEvmConfig,
+        tracer::{CycleTracer, Span, enter, exit, span},
+    };
 }

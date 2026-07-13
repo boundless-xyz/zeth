@@ -7,6 +7,7 @@ license = { workspace = true }
 repository = { workspace = true }
 
 [features]
+cycle-tracker = ["postcard", "risc0-zkvm", "tracing"]
 # Allow proving of pre-merge (Proof-of-Work) blocks.
 # This is considered unsafe because reth does not correctly validate all difficulty constraints.
 unsafe-pre-merge = []
@@ -14,6 +15,7 @@ unsafe-pre-merge = []
 [dependencies]
 alloy-primitives = { workspace = true, features = ["map"] }
 alloy-rlp = { workspace = true }
+postcard = { workspace = true, optional = true }
 reth-chainspec = { workspace = true }
 reth-ethereum-primitives = { workspace = true }
 reth-evm = { workspace = true }
@@ -21,15 +23,23 @@ reth-evm-ethereum = { workspace = true }
 reth-primitives-traits = { workspace = true }
 reth-trie-common = { workspace = true }
 risc0-ethereum-trie = { workspace = true }
+risc0-zkvm = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }
 stateless = { workspace = true }
 tries = { workspace = true }
+
+tracing = { workspace = true, optional = true }
 
 # R0VM-accelerated precompile primitives (zkVM-only). The crate itself assumes
 # the zkVM target and wouldn't link on host; the adapter `impl Crypto` block is
 # cfg-gated to match.
 [target.'cfg(all(target_os = "zkvm", target_vendor = "risc0"))'.dependencies]
 risc0-crypto-evm = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
 
 [lints]
 workspace = true
