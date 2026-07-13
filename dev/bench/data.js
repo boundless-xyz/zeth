@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1780827271177,
+  "lastUpdate": 1783937197035,
   "repoUrl": "https://github.com/boundless-xyz/zeth",
   "entries": {
     "Benchmark": [
@@ -849,6 +849,50 @@ window.BENCHMARK_DATA = {
           "url": "https://github.com/boundless-xyz/zeth/commit/0facb9ad77ce666897b42e006459a31becc3fb2d"
         },
         "date": 1780827270458,
+        "tool": "customSmallerIsBetter",
+        "benches": [
+          {
+            "name": "total_cycles",
+            "value": 823132160,
+            "unit": "cycles"
+          },
+          {
+            "name": "user_cycles",
+            "value": 671376895,
+            "unit": "cycles"
+          },
+          {
+            "name": "read_input_cycles",
+            "value": 6192484,
+            "unit": "cycles"
+          },
+          {
+            "name": "validation_cycles",
+            "value": 665158205,
+            "unit": "cycles"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "weifanglab@outlook.com",
+            "name": "weifanglab",
+            "username": "weifanglab"
+          },
+          "committer": {
+            "email": "noreply@github.com",
+            "name": "GitHub",
+            "username": "web-flow"
+          },
+          "distinct": true,
+          "id": "3fe7de60ad08b47dde876bfc874e0f6069daff1f",
+          "message": "chore: fix comment grammar in preflight DB (#253)\n\nSigned-off-by: weifanglab <weifanglab@outlook.com>",
+          "timestamp": "2026-07-13T11:59:18+02:00",
+          "tree_id": "c1b678440b0c5cd22aac0a996675178e516eb229",
+          "url": "https://github.com/boundless-xyz/zeth/commit/3fe7de60ad08b47dde876bfc874e0f6069daff1f"
+        },
+        "date": 1783937195880,
         "tool": "customSmallerIsBetter",
         "benches": [
           {
