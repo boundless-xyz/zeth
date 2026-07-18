@@ -65,7 +65,7 @@ serde_with = "3"
 sha2 = "0.10"
 tempfile = "3.25"
 thiserror = "2"
-tokio = { version = "1.46", features = ['full'] }
+tokio = { version = "1.52", features = ['full'] }
 test-log = "0.2"
 tracing = "0.1"
 tracing-subscriber = "0.3"
