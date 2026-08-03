@@ -21,13 +21,12 @@ use alloy_genesis::Genesis;
 use alloy_primitives::{Address, B256, U256, address};
 use reth_chainspec::{BaseFeeParams, Chain, DepositContract, EthChainSpec, Hardforks, NamedChain};
 use reth_ethereum_forks::{
-    EthereumHardfork, EthereumHardforks, ForkCondition, Hardfork, hoodi, mainnet, sepolia,
+    ChainHardforks, DEV_HARDFORKS, EthereumHardfork, EthereumHardforks, ForkCondition, Hardfork,
+    hoodi, mainnet, sepolia,
 };
 use reth_evm::eth::spec::EthExecutorSpec;
 use reth_primitives_traits::Header;
 use std::{
-    any::Any,
-    collections::BTreeMap,
     fmt::{self, Debug, Display},
     sync::{Arc, LazyLock},
 };
@@ -84,14 +83,14 @@ pub static HOODI: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     spec.into()
 });
 
-/// Development chain specification for local testing with Anvil (chain ID 31337).
+/// Development chain specification matching `reth --dev` (chain ID 1337).
 ///
 /// All hardforks are activated at genesis (block 0 / timestamp 0).
-/// Use with `anvil` or any node configured with chain ID 31337.
+/// Use with `reth --dev` or any node configured with chain ID 1337.
 pub static DEV: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
     let spec = ChainSpec {
-        chain: NamedChain::AnvilHardhat.into(),
-        forks: EthereumHardfork::devnet().into(),
+        chain: NamedChain::Dev.into(),
+        forks: DEV_HARDFORKS.clone(),
         deposit_contract_address: None,
         base_fee_params: BaseFeeParams::ethereum(),
         blob_params: BlobScheduleBlobParams::default(),
@@ -102,7 +101,7 @@ pub static DEV: LazyLock<Arc<ChainSpec>> = LazyLock::new(|| {
 #[derive(Clone, Debug)]
 pub struct ChainSpec {
     chain: Chain,
-    forks: BTreeMap<EthereumHardfork, ForkCondition>,
+    forks: ChainHardforks,
     deposit_contract_address: Option<Address>,
     base_fee_params: BaseFeeParams,
     blob_params: BlobScheduleBlobParams,
@@ -115,28 +114,28 @@ impl Display for ChainSpec {
 }
 
 impl EthereumHardforks for ChainSpec {
+    #[inline]
     fn ethereum_fork_activation(&self, fork: EthereumHardfork) -> ForkCondition {
-        self.forks.get(&fork).cloned().unwrap_or_default()
+        self.forks.fork(fork)
     }
 }
 
 impl EthExecutorSpec for ChainSpec {
+    #[inline]
     fn deposit_contract_address(&self) -> Option<Address> {
         self.deposit_contract_address
     }
 }
 
 impl Hardforks for ChainSpec {
+    #[inline]
     fn fork<H: Hardfork>(&self, fork: H) -> ForkCondition {
-        if let Some(eth_fork) = (&fork as &dyn Any).downcast_ref::<EthereumHardfork>() {
-            self.ethereum_fork_activation(*eth_fork)
-        } else {
-            ForkCondition::Never
-        }
+        self.forks.fork(fork)
     }
 
+    #[inline]
     fn forks_iter(&self) -> impl Iterator<Item = (&dyn Hardfork, ForkCondition)> {
-        self.forks.iter().map(|(eth_fork, condition)| (eth_fork as &dyn Hardfork, *condition))
+        self.forks.forks_iter()
     }
 
     fn fork_id(&self, _: &Head) -> ForkId {
@@ -155,14 +154,17 @@ impl Hardforks for ChainSpec {
 impl EthChainSpec for ChainSpec {
     type Header = Header;
 
+    #[inline]
     fn chain(&self) -> Chain {
         self.chain
     }
 
+    #[inline]
     fn base_fee_params_at_timestamp(&self, _: u64) -> BaseFeeParams {
         self.base_fee_params
     }
 
+    #[inline]
     fn blob_params_at_timestamp(&self, timestamp: u64) -> Option<BlobParams> {
         if let Some(blob_param) = self.blob_params.active_scheduled_params_at_timestamp(timestamp) {
             Some(*blob_param)
@@ -223,10 +225,7 @@ mod tests {
 
     fn assert_eq(spec: &ChainSpec, reth_spec: &reth_chainspec::ChainSpec) {
         assert_eq!(spec.chain, reth_spec.chain);
-        assert_eq!(
-            spec.forks.values().cloned().collect::<Vec<_>>(),
-            reth_spec.forks_iter().map(|(_, f)| f).collect::<Vec<_>>(),
-        );
+        assert_eq!(spec.forks, reth_spec.hardforks);
         assert_eq!(spec.deposit_contract_address, reth_spec.deposit_contract.map(|c| c.address));
         assert_eq!(BaseFeeParamsKind::Constant(spec.base_fee_params), reth_spec.base_fee_params);
         assert_eq!(spec.blob_params, reth_spec.blob_params);
@@ -249,12 +248,6 @@ mod tests {
 
     #[test]
     fn dev() {
-        let spec = &DEV;
-        let reth_spec = &reth_chainspec::DEV;
-        // Note: reth's DEV_HARDFORKS is outdated (only up to Prague), so we verify our DEV spec
-        // independently rather than comparing against reth_chainspec::DEV.
-        assert_eq!(spec.deposit_contract_address, reth_spec.deposit_contract.map(|c| c.address));
-        assert_eq!(BaseFeeParamsKind::Constant(spec.base_fee_params), reth_spec.base_fee_params);
-        assert_eq!(spec.blob_params, reth_spec.blob_params);
+        assert_eq(&DEV, &reth_chainspec::DEV);
     }
 }
