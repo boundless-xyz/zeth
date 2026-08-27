@@ -244,7 +244,7 @@ impl StatelessTrie for SparseState {
     /// Returns the storage slot value that corresponds to the given (address, slot) tuple.
     fn storage(&self, address: Address, slot: U256) -> Result<U256, WitnessDbError> {
         let storages = self.storages.borrow();
-        // storage() is always be called after account(), so the storage trie must already exist
+        // storage() is always called after account(), so the storage trie must already exist
         let storage_trie = storages.get(&keccak256(address)).unwrap();
         Ok(storage_trie.get(keccak256(B256::from(slot)))?.unwrap_or(U256::ZERO))
     }
@@ -253,7 +253,7 @@ impl StatelessTrie for SparseState {
     fn calculate_state_root(&mut self, state: HashedPostState) -> Result<B256, StatelessTrieError> {
         let mut removed_accounts = Vec::new();
         for (hashed_address, account) in state.accounts {
-            // nonexisting accounts must be removed from the state
+            // nonexistent accounts must be removed from the state
             let Some(account) = account else {
                 removed_accounts.push(hashed_address);
                 continue;
