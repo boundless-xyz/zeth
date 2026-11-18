@@ -1,3 +1,5 @@
+> **Archived:** Zeth is no longer maintained and is preserved for reference. For context on the Boundless proving protocol pause, see the [Boundless Foundation announcement](https://boundlessfdn.org/blog/zkc-the-ai-access-coin).
+
 # Zeth: A RISC Zero zkVM Block Prover for Ethereum
 
 Zeth is an open-source, execution-layer block prover for Ethereum, built on the RISC Zero zkVM and leveraging the power of [Reth](https://reth.rs/).
